@@ -6,7 +6,7 @@ codingCfg.troubleOpts = {
     auto_preview = true, -- automatically open preview when on an item
     auto_refresh = true, -- auto refresh when open
     auto_jump = false, -- auto jump to the item when there's only one
-    focus = false, -- Focus the window when opened
+    focus = true, -- Focus the window when opened
     restore = true, -- restores the last location in the list when opening
     follow = true, -- Follow the current item
     indent_guides = true, -- show indent guides
@@ -41,7 +41,7 @@ codingCfg.troubleOpts = {
     },
     -- Key mappings can be set to the name of a builtin action,
     -- or you can define your own custom action.
-    ---@type table<string, trouble.Action.spec|false>
+    -- @type table<string, trouble.Action.spec|false>
     keys = {
         ["?"] = "help",
         r = "refresh",
@@ -51,8 +51,8 @@ codingCfg.troubleOpts = {
         ["<esc>"] = "cancel",
         ["<cr>"] = "jump",
         ["<2-leftmouse>"] = "jump",
-        ["<c-s>"] = "jump_split",
-        ["<c-v>"] = "jump_vsplit",
+        ["<A-s>"] = "jump_split",
+        ["<A-v>"] = "jump_vsplit",
         -- go down to next item (accepts count)
         -- j = "next",
         ["}"] = "next",
@@ -109,6 +109,10 @@ codingCfg.troubleOpts = {
             params = {
                 include_declaration = true,
             },
+        },
+        diagnostics_buffer = {
+            mode = "diagnostics", -- inherit from diagnostics mode
+            filter= { buf = 0 }, -- filter diagnostics to the current buffer
         },
         -- The LSP base mode for:
         -- * lsp_definitions, lsp_references, lsp_implementations
@@ -217,11 +221,11 @@ codingCfg.avanteOpts = {
     -- provider = "deepseek",
     provider = "gemini",
     gemini = {
-        -- endpoint = "https://generativelanguage.googleapis.com/v1beta/",
-        model = "gemini-2.0-flash",
-        -- model = "gemini-2.0-flash-thinking-exp",
-        temperature = 0,
-        max_tokens = 4096,
+        -- endpoint = "https://generativelanguage.googleapis.com/v1beta/", -- The endpoint for the Gemini API.  Currently unused.
+        -- model = "gemini-2.0-flash", -- The Gemini model to use (e.g., "gemini-2.0-flash").  Commented out alternative.
+        model = "gemini-2.0-flash-thinking-exp", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+        temperature = 0, -- Controls the randomness of the output. 0 is more deterministic.
+        max_tokens = 4096, -- The maximum number of tokens in the generated response.
     },
     vendors = {
         deepseek = {
@@ -294,9 +298,9 @@ codingCfg.avanteOpts = {
     hints = { enabled = true },
     windows = {
         -- @type "right" | "left" | "top" | "bottom"
-        position = "bottom", -- the position of the sidebar
+        position = "right", -- the position of the sidebar
         wrap = true, -- similar to vim.o.wrap
-        width = 80, -- default % based on available width
+        width = 40, -- default % based on available width
         sidebar_header = {
             enabled = true, -- true, false to enable/disable the header
             align = "center", -- left, center, right for title
@@ -304,15 +308,15 @@ codingCfg.avanteOpts = {
         },
         input = {
             prefix = "> ",
-            height = 10, -- Height of the input window in vertical layout
+            height = 20, -- Height of the input window in vertical layout
         },
         edit = {
             border = "rounded",
-            start_insert = true, -- Start insert mode when opening the edit window
+            start_insert = false, -- Start insert mode when opening the edit window
         },
         ask = {
             floating = true, -- Open the 'AvanteAsk' prompt in a floating window
-            start_insert = true, -- Start insert mode when opening the ask window
+            start_insert = false, -- Start insert mode when opening the ask window
             border = "rounded",
             ---@type "ours" | "theirs"
             focus_on_apply = "ours", -- which diff to focus after applying

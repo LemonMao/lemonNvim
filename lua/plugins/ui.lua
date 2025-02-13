@@ -25,6 +25,16 @@ local function configure_trouble_segment()
     }
 end
 
+-- Transfer Upload status icon
+local function transfer_upload_status()
+  local enabled = _G.transfer_upload_auto_enabled
+  if enabled then
+    return "󰅧"
+  else
+    return "󰅤 "
+  end
+end
+
 lualine.setup {
     options = {
         icons_enabled = true,
@@ -32,7 +42,7 @@ lualine.setup {
         component_separators = { left = '', right = ''},
         section_separators = { left = '', right = ''},
         disabled_filetypes = {
-            statusline = {},
+            statusline = {'tagbar'},
             winbar = {},
         },
         extensions = { "nvim-tree", "toggleterm" },
@@ -53,10 +63,30 @@ lualine.setup {
                 icons_enabled = true,
             },
         },
-        lualine_b = {'diagnostics'},
+        lualine_b = {{
+            'diagnostics',
+            source = {"nvim_diagnostic"},
+            sections = { 'error', 'warn', 'info', 'hint' },
+            diagnostics_color = {
+                -- Same values as the general color option can be used here.
+                error = 'DiagnosticError', -- Changes diagnostics' error color.
+                warn  = 'DiagnosticWarn',  -- Changes diagnostics' warn color.
+                info  = 'DiagnosticInfo',  -- Changes diagnostics' info color.
+                hint  = 'DiagnosticHint',  -- Changes diagnostics' hint color.
+            },
+            symbols = { error = " ", warn = " ", hint = "󰌵 ", info = " " },
+            colored = true,           -- Displays diagnostics status in color if set to true.
+            update_in_insert = false, -- Update diagnostics in insert mode.
+            always_visible = false,   -- Show diagnostics even if there are none.
+        }},
         lualine_c = {'filename', configure_trouble_segment(),},
         lualine_x = {'encoding', 'fileformat', 'filetype'},
-        lualine_y = {'progress'},
+        lualine_y = {'progress',
+            {
+                function() return transfer_upload_status() end, -- 使用自定义组件函数
+                icon = nil, -- 可以选择性地为组件再添加一个图标 (如果函数返回的图标不够)
+            },
+        },
         lualine_z = {'location'}
     },
     inactive_sections = {
@@ -91,6 +121,7 @@ require("bufferline").setup({
     options = {
         mode = "buffers",
         tab_size = 5,
+        color_icons = true , -- whether or not to add the filetype icon highlights
     }
 })
 
@@ -107,6 +138,7 @@ db.setup({
     theme = 'doom',
     config = {
         header = {
+            [[]],
             [[]],
             [[   ██╗     ███████╗███╗   ███╗ ██████╗ ███╗   ██╗    ██╗   ██╗██╗███╗   ███╗]],
             [[   ██║     ██╔════╝████╗ ████║██╔═══██╗████╗  ██║    ██║   ██║██║████╗ ████║]],
@@ -227,14 +259,6 @@ require("noice").setup({
         lsp_doc_border = true, -- add a border to hover docs and signature help
     },
 })
-
-vim.keymap.set("n", "<leader>nl", function()
-    require("noice").cmd("last")
-end)
-
-vim.keymap.set("n", "<leader>nh", function()
-    require("noice").cmd("history")
-end)
 
 -- Noice help:
 -- :Noice or :Noice history shows the message history

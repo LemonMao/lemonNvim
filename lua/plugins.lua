@@ -250,6 +250,12 @@ require("lazy").setup({
     },
     {
         "skywind3000/vim-preview",
-    }
+    },
+    {
+        "coffebar/transfer.nvim",
+        lazy = true,
+        cmd = { "TransferInit", "DiffRemote", "TransferUpload", "TransferDownload", "TransferDirDiff", "TransferRepeat" },
+        opts = {},
+    },
     -- Plugin End
 })

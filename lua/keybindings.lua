@@ -43,9 +43,9 @@ map("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move selected text down" })
 map("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move selected text up" })
 map("n", "<C-e>", ":b# <CR>", { desc = "switch current buffer" })
 -- Bufferline
-map("n", "<leader>bh", ":BufferLineCyclePrev<CR>", { desc = "BufferLineCyclePrev"})
-map("n", "<leader>bl", ":BufferLineCycleNext<CR>", { desc = "BufferLineCycleNext"})
-map("n", "<leader>bw", ":bdelete<CR>", { desc = "BufferLineCloseCurrent"})
+map("n", "<M-b>h", ":BufferLineCyclePrev<CR>", { desc = "BufferLineCyclePrev"})
+map("n", "<M-b>l", ":BufferLineCycleNext<CR>", { desc = "BufferLineCycleNext"})
+map("n", "<M-w>", ":bdelete<CR>", { desc = "BufferLineCloseCurrent"})
 
 -- ## ------------------------------ ##
 -- ## AI
@@ -54,6 +54,7 @@ map("n", "<leader>bw", ":bdelete<CR>", { desc = "BufferLineCloseCurrent"})
 -- map({ "n", "v" }, "<leader>aa", ":AvanteAsk <CR>", { desc = "open dir tree" })
 map({ "n", "v" }, "<leader>ac", ":AvanteClear <CR>", { desc = "Avante: Clear the chat box content" })
 map({ "n", "v" }, "<leader>as", ":AvanteSwitchProvider <CR>", { desc = "Avante: Switch provider" })
+map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual", true)<CR>', { desc = 'Codeium Manual Mode On' })
 
 -- ## ------------------------------ ##
 -- ## UI
@@ -62,6 +63,10 @@ map({ "n", "v" }, "<leader>as", ":AvanteSwitchProvider <CR>", { desc = "Avante: 
 -- directory tree, nvim-tree
 map("n", "<leader>f", ":NvimTreeToggle<CR>", { desc = "open dir tree" })
 map("n", "<leader>F", ":NvimTreeFindFile<CR>", { desc = "open dir tree for file" })
+-- Noice
+map("n", "<leader>nl", ":Noice last<CR>", { desc = "Noice: Last message" })
+map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message history" })
+-- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })
 
 -- ## ------------------------------ ##
 -- ## Search
@@ -69,10 +74,13 @@ map("n", "<leader>F", ":NvimTreeFindFile<CR>", { desc = "open dir tree for file"
 -- Telescope, find files/global grep
 map("n", "sc", ":Telescope ", { desc = "Type :Telescope command" })
 map("n", "sf", ":Telescope find_files<CR>", { desc = "Search for files in PWD" })
-map("n", "sg", ":Telescope grep_string<CR>", { desc = "Searches for the string under your cursor in your PWD" })
+map("n", "sg", ":Telescope live_grep<CR>", { desc = "Searches for the string in your PWD" })
+map("n", "sgd", ":Telescope live_grep search_dirs={'", { desc = "Searches for the string in your PWD with dir" })
+map("n", "sgg", ":Telescope grep_string<CR>", { desc = "Searches for the string under your cursor in your PWD" })
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Lists previously open files" })
 map("n", "ss", ":Telescope current_buffer_fuzzy_find<CR>", { desc = "Search string of the current buffer" })
+-- map("n", "ssg", ":Telescope current_buffer_fuzzy_find<CR>", { desc = "Search string of the current buffer" })
 map("n", "st", ":Telescope treesitter<CR>", { desc = "Lists function names, variables, and other symbols from treesitter queries" })
 map("n", "sh", ":Telescope man_pages sections={'ALL'}<CR>", { desc = "Lists manpage entries" })
 map("n", "sk", ":Telescope keymaps <CR>", { desc = "Lists manpage entries" })
@@ -125,13 +133,26 @@ map('n', 'gs', ':ClangdSwitchSourceHeader<CR>', { desc = "LSP switch source head
 -- ## ------------------------------ ##
 --
 -- yank/paste in system clipboard
--- map('n', 'yp', '<Cmd>NvimTreeToggle<CR>|Y<CR>', { desc = "Copy current file path to system clipboard" })
+-- map('n', 'yp', ':let @+ = expand("%:p:h:.")<CR>', { desc = "Copy current file path to system clipboard" })
 map('n', 'sy', '"+y', { desc = "Copy to system clipboard" })
 map('n', 'sp', '"+p', { desc = "Paste from system clipboard" })
 map('x', 'sy', '"+y', { desc = "Copy to system clipboard" })
 map('x', 'sp', '"+p', { desc = "Paste from system clipboard" })
 map('x', '<C-c>', '"+y', { desc = "Copy to  system clipboard" })
 map('i', '<C-v>', '"+p', { desc = "Paste from system clipboard" })
+vim.keymap.set('n', 'yp', function()
+    local current_file = vim.api.nvim_buf_get_name(0)
+    if vim.fn.empty(current_file) == 1 then
+        vim.notify("No file in current buffer", vim.log.levels.WARN, { title = "Copy Relative Dir Path" })
+        return
+    end
+
+    local current_dir = vim.fn.fnamemodify(current_file, ":h")
+    local relative_dir = vim.fn.fnamemodify(current_dir, ":~:.") -- ":~:." makes it relative to cwd, and ensures directory format
+
+    vim.cmd('let @+ = expand("' .. relative_dir .. '")')
+    vim.notify("Relative directory path copied to clipboard:\n" .. relative_dir, vim.log.levels.INFO, { title = "Copy Relative Dir Path" })
+end, { desc = "Copy Relative Directory Path to Clipboard" })
 --
 -- insert 模式下，跳到行首行尾
 map('i', '<C-a>', '<Home>', { desc = "Insert mode, move to line header" })
@@ -147,10 +168,26 @@ map('i', '<M-b>', '<S-Left>', { desc = "" })
 map('n', '<leader>m', '<leader>s8<leader>k', { desc = "Mark word.", remap = true })
 map('x', '<leader>m', '<leader>s8gv<leader>k', { desc = "Mark word.", remap = true })
 map('n', '<leader>M', '<leader>s9<leader>K', { desc = "", remap = true })
-map('n', '<C-n>', ':silent noh<CR>', { desc = "" })
+map('n', '<C-n>', ':silent noh<CR> :Noice dismiss<CR>', { desc = "Dismiss Highlight word and Noice message" })
 --
--- other utils
-map('n', '<A-q>', ':q<CR>', { desc = "" })
+-- Close window
+local function toggle_quickfix()
+  local has_quickfix = false
+  for _, win in ipairs(vim.fn.getwininfo()) do
+    if win.quickfix == 1 then
+      has_quickfix = true
+      break
+    end
+  end
+  if has_quickfix then
+    vim.cmd('cclose')
+  else
+    vim.cmd('copen')
+  end
+end
+map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
+map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
+
 
 -- ## ------------------------------ ##
 -- ## Coding
@@ -168,21 +205,23 @@ map({ "n", "v" }, "<leader>sd", "<cmd>Cs find d<cr>", { desc = "Find functions t
 map({ "n", "v" }, "<leader>sa", "<cmd>Cs find a<cr>", { desc = "Find places where this symbol is assigned a value" })
 --
 -- Diagnos Trouble
-map("n", "<leader>de", ":lua toggle_diagnostics()<CR>", { desc = "" })
-map("n", "<leader>dx", ":Trouble diagnostics toggle<CR>", { desc = "" })               -- Diagnostics (Trouble)
-map("n", "<leader>dX", ":Trouble diagnostics toggle filter.buf=0<CR>", { desc = "" })  -- Buffer Diagnostics (Trouble)
-map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "" })       -- Symbols (Trouble)
-map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "" })  -- LSP Definitions / references / ... (Trouble)
-map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "" })                   -- Location List (Trouble)
-map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "" })                    -- Quickfix List (Trouble)
+map("n", "<leader>de", ":lua toggle_diagnostics()<CR>", { desc = "Toggle diagnostics in file" })
+map("n", "<leader>dx", ":Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Trouble: toggle diagnostics on current buffer" })  -- Buffer Diagnostics (Trouble)
+map("n", "<leader>dX", ":Trouble diagnostics toggle<CR>", { desc = "Trouble: toggle diagnostics on project" })               -- Diagnostics (Trouble)
+map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "Trouble: Open LSP symbols" })       -- Symbols (Trouble)
+map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "Trouble: Open LSP def/ref/..." })  -- LSP Definitions / references / ... (Trouble)
+map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "Trouble: Open Trouble local list" })                   -- Location List (Trouble)
+map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "Trouble: Open Trouble Quickfix" })                    -- Quickfix List (Trouble)
 --
 -- git
-map('n', '<leader>gb', ':BlameToggle<CR>', { desc = "" })
+map('n', '<leader>gb', ':BlameToggle<CR>', { desc = "Git: Diplay Blame history" })
 --
 -- format - conform
-map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { desc = "" })
-map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "" })
+map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { desc = "Format code" })
+map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code" })
 --
+-- transfer upload toggle
+map('n', '<leader>tt', ':TransferToggle<CR>', { desc = "Transfer: upload toggle" })
 -- complete nvim-cmp
 pluginKeys.cmp = function(cmp)
   local feedkey = function(key, mode)

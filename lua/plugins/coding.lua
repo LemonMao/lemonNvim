@@ -7,7 +7,7 @@ vim.diagnostic.config({
     update_in_insert = true,
 })
 
-local signs = { Error = " ", Warn = " ", Hint = " ", Info = " " }
+local signs = { Error = "", Warn = "", Hint = "󰌵", Info = "" }
 for type, icon in pairs(signs) do
     local hl = "DiagnosticSign" .. type
     vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
@@ -271,7 +271,7 @@ require("codeium").setup({
     -- Optionally disable cmp source if using virtual text only
     enable_cmp_source = false,
     enterprise_mode = true,
-    enable_chat = true,
+    enable_chat = false,
 
     api = {
         -- the hostname. Example: "codeium.example.com". Required when using enterprise mode
@@ -338,10 +338,54 @@ require("codeium").setup({
     },
 })
 
+-- Codeium Auto Toggle. It is enabled at NVIM launch. Use this command to toggle the
+-- enable/disable for Codeium feature.
+local codeium_config = require("codeium.config").options
+vim.api.nvim_create_user_command('CodeiumToggle', function()
+    codeium_config.virtual_text.enabled = not codeium_config.virtual_text.enabled
+    require("codeium").setup(codeium_config)
+
+    if codeium_config.virtual_text.enabled then
+        vim.notify("Codeium enabled: ON", vim.log.levels.INFO, { title = "Codeium" })
+    else
+        vim.notify("Codeium enabled: OFF", vim.log.levels.INFO, { title = "Codeium" })
+    end
+end, { desc = "Toggle Codeium" })
+
+--
 require('codeium.virtual_text').set_statusbar_refresh(function()
     require('lualine').refresh()
 end)
 
+-- ## ------------------------------ ##
+-- ## Transfer
+-- ## ------------------------------ ##
+--
+-- 存储 TransferUpload 自动化状态的全局变量，默认为禁用 (false)
+_G.transfer_upload_auto_enabled = false
+
+vim.api.nvim_create_user_command('TransferToggle', function()
+  -- 切换全局变量的状态 (true 变为 false, false 变为 true)
+  _G.transfer_upload_auto_enabled = not _G.transfer_upload_auto_enabled
+
+  if _G.transfer_upload_auto_enabled then
+    vim.notify("TransferUpload 自动化: 启用", vim.log.levels.INFO, { title = "TransferToggle" })
+  else
+    vim.notify("TransferUpload 自动化: 禁用", vim.log.levels.INFO, { title = "TransferToggle" })
+  end
+end, { desc = "切换 Buffer 保存时自动 TransferUpload 功能" })
+
+vim.api.nvim_create_autocmd("BufWritePost", {
+  group = vim.api.nvim_create_augroup("TransferUploadAutoCmd", { clear = true }),
+  callback = function()
+    -- 检查全局变量 _G.transfer_upload_auto_enabled 是否为 true (启用状态)
+    if _G.transfer_upload_auto_enabled then
+      -- 执行 TransferUpload 命令
+      vim.cmd('TransferUpload')
+    end
+  end,
+  desc = "Buffer 保存后自动执行 TransferUpload (可使用 :TransferToggle 切换开关)",
+})
 -- ## ------------------------------ ##
 -- ##
 -- ## ------------------------------ ##

@@ -81,15 +81,13 @@ let g:gutentags_trace = 0
 " ########
 " vim-preview
 " ########
-noremap <m-u> :PreviewScroll -5<cr>
-noremap <m-d> :PreviewScroll +5<cr>
-inoremap <m-u> <c-\><c-o>:PreviewScroll -5<cr>
-inoremap <m-d> <c-\><c-o>:PreviewScroll +5<cr>
+" noremap <m-u> :PreviewScroll -5<cr>
+" noremap <m-d> :PreviewScroll +5<cr>
+" inoremap <m-u> <c-\><c-o>:PreviewScroll -5<cr>
+" inoremap <m-d> <c-\><c-o>:PreviewScroll +5<cr>
 autocmd FileType qf nnoremap <silent><buffer> p :PreviewQuickfix<cr>
 autocmd FileType qf nnoremap <silent><buffer> P :PreviewClose<cr>
 nmap <m-t> :PreviewTag <cr>
 nmap <m-s> :PreviewSignature <cr>
 nmap <m-c> :PreviewClose <cr>
 " close quickfix window
-nmap <m-q> :cclose<cr>
-nmap <leader>q :q<cr>
