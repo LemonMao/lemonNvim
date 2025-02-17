@@ -1,0 +1,150 @@
+# Read File Into Vector
+snippet readfile
+	std::vector<char> v;
+	if (FILE *${2:fp} = fopen(${1:"filename"}, "r")) {
+		char buf[1024];
+		while (size_t len = fread(buf, 1, sizeof(buf), $2))
+			v.insert(v.end(), buf, buf + len);
+		fclose($2);
+	}${3}
+
+## -- structure
+# std::map
+snippet map
+	std::map<${1:key}, ${2:value}> ${3}
+# std::vector
+snippet vec
+	std::vector<${1:std::string}> ${2}
+# std::string
+snippet str
+	std::string ${1}
+# std::string
+snippet str-const
+	const std::string ${1}
+# std::array
+snippet arr
+	std::array<${1:std::string}, ${2:length}> ${3}
+# std::list
+snippet list
+	std::list<${1}> ${2}
+# std::deque
+snippet deq
+	std::deque<${1}> ${2}
+# std::queue
+snippet que
+	std::queue<${1}> ${2}
+# std::umap
+snippet map-unordered
+	std::unordered_map<${1:std::string}, ${2:val}> ${3}
+# std::shared_ptr
+snippet ptr-shared
+	std::shared_ptr<${1}> ${2}
+# std::unique_ptr
+snippet ptr-unique
+	std::unique_ptr<${1}> ${2}
+snippet enum
+	enum class ${1:name} {${2}};
+snippet lock
+	std::lock_guard<std::mutex> lock{${1:mutex_name}};
+
+# std::make_shared()
+snippet makesh make_shared<>()
+	std::make_shared<${1}>(${2});
+
+# Namespace
+snippet ns
+	namespace ${1:`expand("%:t:r")`}
+	{
+		${2}
+	} /* end of namespace $1 */
+# Class
+snippet class-defCopy class - default copyable/moveable
+	class ${1:`expand("%:t:r")`}
+	{
+	public:
+		// constructor and destructor
+		$1();
+		~$1() = default;
+
+		// default copyable and moveable
+		$1(const $1 &) = default;
+		$1& operator=(const $1 &) = default;
+		$1($1 &&) = default;
+		$1& operator=($1 &&) = default;
+
+	private:
+	};
+
+snippet class-nonCopy class - non-copyable/moveable
+	class ${1:`expand("%:t:r")`}
+	{
+	public:
+		// constructor and destructor
+		$1();
+		~$1() = default;
+
+		// non-copyable and non-moveable
+		$1(const $1 &) = delete;
+		$1& operator=(const $1 &) = delete;
+		$1($1 &&) = delete;
+		$1& operator=($1 &&) = delete;
+
+	private:
+	};
+
+
+## -- function
+# std::cout
+snippet cout
+	std::cout << ${1} << std::endl;
+snippet cerr
+	std::cerr << ${1} << std::endl;
+
+## -- Header file
+# <string>
+snippet header-<string>
+	#include <string>
+snippet header-<map>
+	#include <map>
+snippet header-<vector>
+	#include <vector>
+snippet header-<deque>
+	#include <deque>
+snippet header-<queue>
+	#include <queue>
+snippet header-<array>
+	#include <array>
+snippet header-<unordered_map>
+	#include <unordered_map>
+snippet header-<memory>
+	#include <memory>
+snippet header-<optional>
+	#include <optional>
+snippet header-<mutex>
+	#include <mutex>
+
+## -- Template
+snippet temp
+	template <typename ${1}>
+snippet temp-func
+	template <typename ${1}>
+	${2:fun_name}()
+	{
+	}
+## -- try-catch
+snippet try
+	try
+	{
+	}
+	catch (const std::exception& ex)
+	{
+	}
+## -- cast
+snippet cast-static
+	static_cast<${1}>(${2})
+snippet cast-reinterpret
+	reinterpret_cast<${1}>(${2})
+snippet cast-dynamic
+	dynamic_cast<${1}>(${2})
+snippet cast-move<>
+	std::move<${1}>(${2})

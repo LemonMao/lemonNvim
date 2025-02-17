@@ -86,6 +86,17 @@ lualine.setup {
                 function() return transfer_upload_status() end, -- 使用自定义组件函数
                 icon = nil, -- 可以选择性地为组件再添加一个图标 (如果函数返回的图标不够)
             },
+            {
+                -- recording status
+                function()
+                    local reg = vim.fn.reg_recording()
+                    if reg ~= '' then
+                        return ' ' .. reg  -- Change '' to any icon you prefer
+                    end
+                    return ''
+                end,
+                color = { fg = "#ff9e64", gui = "bold" }, -- Customize color
+            }
         },
         lualine_z = {'location'}
     },

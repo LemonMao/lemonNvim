@@ -40,7 +40,7 @@ require("lazy").setup({
         event = "VeryLazy",
         lazy = false,
         version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
-        opts = require("plugins.codingCfg").avanteOpts,
+        opts = require("plugins.avante").opts,
         -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
         build = "make",
         -- build = "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false" -- for windows
@@ -192,6 +192,9 @@ require("lazy").setup({
         build = ":TSUpdate",
     },
     {
+        "nvim-treesitter/nvim-treesitter-textobjects",
+    },
+    {
         -- code format
         "stevearc/conform.nvim",
     },
@@ -205,15 +208,17 @@ require("lazy").setup({
             "hrsh7th/cmp-buffer",
             "hrsh7th/cmp-path",
             "hrsh7th/cmp-cmdline",
-            "hrsh7th/cmp-vsnip",
-            "hrsh7th/vim-vsnip",
-            -- "L3MON4D3/LuaSnipk",
-            -- "saadparwaiz1/cmp_luasnip",
+            -- "hrsh7th/cmp-vsnip",
+            -- "hrsh7th/vim-vsnip",
+            -- "hrsh7th/vim-vsnip-integ",
+            "L3MON4D3/LuaSnip",
+            "saadparwaiz1/cmp_luasnip",
+            build = "make install_jsregexp",
         },
     },
     {
         -- code tools
-        "kechasnovski/mini.animate",
+        "echasnovski/mini.animate",
         "echasnovski/mini.comment",
         "echasnovski/mini.cursorword",
         "echasnovski/mini.hipatterns",
@@ -239,7 +244,7 @@ require("lazy").setup({
     {
         -- diagnos
         "folke/trouble.nvim",
-        opts = require("plugins.codingCfg").troubleOpts,
+        opts = require("plugins.trouble").opts,
         cmd = "Trouble",
     },
     {

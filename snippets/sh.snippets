@@ -1,0 +1,73 @@
+# sh    ==> #!/bin/bash
+# {{{
+snippet sh
+	#!/bin/bash
+# }}}
+	
+# if    ==> if[]; then ... fi
+# elif  ==> elif[]; then ... fi
+# {{{
+snippet if
+	if [[ ${1:condition} ]]; then
+		${2:#statements}
+	fi
+snippet elif
+	elif [[ ${1:condition} ]]; then
+		${2:#statements}
+# }}}
+
+# for   ==> for (); do ... done
+# wh    ==> for (); do ... done
+# until ==> until []; do ... done
+# {{{ 
+snippet for
+	for (( ${2:i} = 0; $2 < ${1:count}; $2++ )); do
+		${3:#statements}
+	done
+snippet wh
+	while [[ ${1:condition} ]]; do
+		${2:#statements}
+	done
+snippet until
+	until [[ ${1:condition} ]]; do
+		${2:#statements}
+	done
+# }}}
+
+# case  ==> case XX in ... esac
+# ca    ==> "YYY") ;;
+# {{{
+snippet case
+	case ${1:word} in
+		${2:pattern})
+			${3};;
+	esac
+snippet ca
+	"${1:num}")
+		;;
+# }}}
+
+# echo  ==> echo "..."
+# for2  ==> for XXX in YYY do ... done
+# ${    ==> ${XX[...]}
+# {{{
+#lemon personal set
+snippet echo
+	echo "${1:string}"
+snippet for2
+	for ${1:var} in ${2:#statements}
+	do
+		${3:#statements}
+	done
+snippet ${
+	${${1}[${2}]}
+# }}}
+
+# rl    ==> cat YYY | while read ZZZ ; do ... done
+# {{{
+snippet rl
+	cat ${2:source} | while read LINE_${1:idx}
+	do
+		${3:doing}
+	done
+# }}}

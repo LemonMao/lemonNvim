@@ -18,8 +18,15 @@ end
 -- 插件快捷键
 local pluginKeys = {}
 
--- 取消 s 默认功能
 map("n", "s", "", { desc = "Undo s key" })
+
+-- ## -------------------------------------- ##
+-- ## F1 ~~ F12 Hotkeys
+-- ## -------------------------------------- ##
+map("n", "<F1>", ":Dashboard<CR>", { desc = "Dashboard" })
+map("n", "<F2>", ":Telescope projects<CR>", { desc = "Telescope projects" })
+map('n', '<F3>', ":1,$s///g", { desc = "Replace all" })
+-- map("n", "<F4>", "", { desc = "Telescope projects" })
 
 -- ## ------------------------------ ##
 -- ## Windows Hotkeys
@@ -168,7 +175,7 @@ map('i', '<M-b>', '<S-Left>', { desc = "" })
 map('n', '<leader>m', '<leader>s8<leader>k', { desc = "Mark word.", remap = true })
 map('x', '<leader>m', '<leader>s8gv<leader>k', { desc = "Mark word.", remap = true })
 map('n', '<leader>M', '<leader>s9<leader>K', { desc = "", remap = true })
-map('n', '<C-n>', ':silent noh<CR> :Noice dismiss<CR>', { desc = "Dismiss Highlight word and Noice message" })
+map('n', '<C-n>', ':Noice dismiss<CR> :silent noh<CR>', { desc = "Dismiss Highlight word and Noice message" })
 --
 -- Close window
 local function toggle_quickfix()
@@ -223,53 +230,89 @@ map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code" })
 -- transfer upload toggle
 map('n', '<leader>tt', ':TransferToggle<CR>', { desc = "Transfer: upload toggle" })
 -- complete nvim-cmp
-pluginKeys.cmp = function(cmp)
-  local feedkey = function(key, mode)
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(key, true, true, true), mode, true)
-  end
+pluginKeys.cmp = function(cmp, luasnip)
+    local feedkey = function(key, mode)
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(key, true, true, true), mode, true)
+    end
 
-  local has_words_before = function()
-    local line, col = unpack(vim.api.nvim_win_get_cursor(0))
-    return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
-  end
+    local has_words_before = function()
+        local line, col = unpack(vim.api.nvim_win_get_cursor(0))
+        return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
+    end
 
-  return {
-    -- 出现补全
-    ["<A-.>"] = cmp.mapping(cmp.mapping.complete(), {"i", "c"}),
-    -- 取消
-    ["<A-,>"] = cmp.mapping({
-      i = cmp.mapping.abort(),
-      c = cmp.mapping.close()
-    }),
-    ["<C-p>"] = cmp.mapping.select_prev_item(),
-    ["<C-n>"] = cmp.mapping.select_next_item(),
-    ["<CR>"] = cmp.mapping.confirm({
-      select = true,
-      behavior = cmp.ConfirmBehavior.Replace
-    }),
-    ["<C-u>"] = cmp.mapping(cmp.mapping.scroll_docs(-4), {"i", "c"}),
-    ["<C-d>"] = cmp.mapping(cmp.mapping.scroll_docs(4), {"i", "c"}),
-    -- Super Tab
-    ["<Tab>"] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif vim.fn["vsnip#available"](1) == 1 then
-        feedkey("<Plug>(vsnip-expand-or-jump)", "")
-      elseif has_words_before() then
-        cmp.complete()
-      else
-        fallback() -- The fallback function sends a already mapped key. In this case, it's probably `<Tab>`.
-      end
-    end, {"i", "s"}),
-    ["<S-Tab>"] = cmp.mapping(function()
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif vim.fn["vsnip#jumpable"](-1) == 1 then
-        feedkey("<Plug>(vsnip-jump-prev)", "")
-      end
-    end, {"i", "s"})
-    -- end of super Tab
-  }
+    return {
+        -- 出现补全
+        ["<A-.>"] = cmp.mapping(cmp.mapping.complete(), {"i", "c"}),
+        -- 取消
+        ["<A-,>"] = cmp.mapping({
+            i = cmp.mapping.abort(),
+            c = cmp.mapping.close()
+        }),
+        ["<C-p>"] = cmp.mapping.select_prev_item(),
+        ["<C-n>"] = cmp.mapping.select_next_item(),
+        -- ["<CR>"] = cmp.mapping.confirm({
+        --     select = true,
+        --     behavior = cmp.ConfirmBehavior.Replace
+        -- }),
+        ["<C-u>"] = cmp.mapping(cmp.mapping.scroll_docs(-4), {"i", "c"}),
+        ["<C-d>"] = cmp.mapping(cmp.mapping.scroll_docs(4), {"i", "c"}),
+
+        -- LuaSnip Super Tab
+        ['<CR>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+                if luasnip.expandable() then
+                    luasnip.expand()
+                else
+                    cmp.confirm({
+                        select = true,
+                    })
+                end
+            else
+                fallback()
+            end
+        end),
+
+        ["<Tab>"] = cmp.mapping(function(fallback)
+            if luasnip.locally_jumpable(1) then
+                luasnip.jump(1)
+            elseif cmp.visible() then
+                cmp.select_next_item()
+            else
+                fallback()
+            end
+        end, { "i", "s" }),
+
+        ["<S-Tab>"] = cmp.mapping(function(fallback)
+            if luasnip.locally_jumpable(-1) then
+                luasnip.jump(-1)
+            elseif cmp.visible() then
+                cmp.select_prev_item()
+            else
+                fallback()
+            end
+        end, { "i", "s" }),
+
+
+        -- Vsnip Super Tab
+        -- ["<Tab>"] = cmp.mapping(function(fallback)
+        --   if cmp.visible() then
+        --     cmp.select_next_item()
+        --   elseif vim.fn["vsnip#available"](1) == 1 then
+        --     feedkey("<Plug>(vsnip-expand-or-jump)", "")
+        --   elseif has_words_before() then
+        --     cmp.complete()
+        --   else
+        --     fallback() -- The fallback function sends a already mapped key. In this case, it's probably `<Tab>`.
+        --   end
+        -- end, {"i", "s"}),
+        -- ["<S-Tab>"] = cmp.mapping(function()
+        --   if cmp.visible() then
+        --     cmp.select_prev_item()
+        --   elseif vim.fn["vsnip#jumpable"](-1) == 1 then
+        --     feedkey("<Plug>(vsnip-jump-prev)", "")
+        --   end
+        -- end, {"i", "s"})
+    }
 end
 
 return pluginKeys

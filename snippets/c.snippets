@@ -1,0 +1,173 @@
+# fileh  ==> File head
+# fileg  ==> File guard
+# * Create: `strftime("%Y-%m-%d %H:%M:%S")`
+snippet file-header
+	/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil; tab-width: 4 -*-
+	 * ex: set softtabstop=4 tabstop=4 expandtab shiftwidth=4: *
+	 * Editor Settings: expandtabs and use 4 spaces for indentation
+	 */
+
+	/*
+	 * Copyright (C) `strftime("%Y")` ${2:`g:snip_company`} All Rights Reserved.
+	 *
+	 * `expand("%:t")` - ${1}
+	 *
+	 * Author: ${3:`g:snip_author` (`g:snip_mail`)}
+	 *
+	 */
+	${4}
+snippet file-guard
+	#ifndef ${1:_`toupper(expand("%:t:r"))`_H_}
+	#define $1
+
+	${2}
+
+	#endif /* end of include guard: $1 */
+
+# main  ==> main() {...}
+snippet main
+	int main(int argc, const char *argv[])
+	{
+		${1}
+		return 0;
+	} /* end of main */
+
+# Inc   ==> include <...>
+# inc   ==> include "..."
+snippet inc<>
+	#include <${1:stdio}.h>${2}
+snippet inc''
+	#include "${1:`expand("%:t:r")`}"${2}
+
+# def   ==> #define xxx
+# ifdef ==> #ifdef xx #endif
+# if    ==> #if ... #endif
+# Def   ==> #ifndef xx #define xx ... #endif
+snippet def1 #define macro
+	#define
+snippet def2 #ifdef macro ... #endif
+	#ifdef ${1:FOO}
+		${2:#define }
+	#endif
+snippet def3 #if ... #endif
+	#if ${1:FOO}
+		${2}
+	#endif
+snippet def4 #ifndef macro #define macro #endif
+	#ifndef $1
+	#define ${1:SYMBOL} ${2:value}
+	#endif${3}
+
+
+# if    ==> if () {...}
+# el    ==> else  {...}
+# elif  ==> elif(){...}
+#If Condition
+snippet if
+	if (${1:/* condition */})
+	{
+	}
+snippet el
+	else
+	{
+		${1}
+	}
+snippet elif
+	else if (${1})
+	{
+		${2}
+	}
+
+# do    ==> do{...}while()
+# wh    ==> while(){...}
+# for   ==> for()  {...}
+snippet while-do
+	do
+	{
+	} while (${1:/* condition */});
+snippet while
+	while (${1:/* condition */})
+	{
+	}
+snippet fori
+	for (${2:i} = 0; $2 < ${1:count}; $2${3:++})
+	{
+	    ${4}
+	}
+snippet forx
+	for (${1:i = 0}; ${2:i < 10}; ${3:i++})
+	{
+	}
+snippet foreach
+	for (auto& obj : ${1})
+	{
+	    ${2}
+	}
+snippet switch
+	switch (${1:0})
+	{
+	    case ${2:1}:
+	    default:
+		    ${3:doing};
+		    break;
+	}
+
+# st    ==> struct XXX_s {...} YYY_t
+snippet type
+	typedef ${1:int} ${2:MyCustomType};${3}
+snippet struct1
+	struct ${1:`Filename('$1_t', 'name')`}
+	{
+		${3:/* data */}
+	}${2: /* optional variable list */};${4}
+snippet typedef-struct
+	typedef struct _${1:MyStruct}
+	{
+		${4:/* data */}
+	} ${2:$1}, *P${3:$1};
+snippet typedef-enum
+	typedef enum _${1:MyEnum}
+	{
+		${3:/* data */}
+	} ${2:$1};
+
+# pr    ==> printf(...);
+# prd   ==> printf(for Debug);
+# prk   ==> printk(...);
+# prkd  ==> printk(for Debug);
+# fpr   ==> fprintf(...);
+# unfortunately version this isn't as nice as TextMates's, given the lack of a
+# dynamic `...`
+# fprintf (again, this isn't as nice as TextMate's version, but it works)
+snippet prt
+	printf("==> ${1} \n"${2});${3}
+snippet prtd
+	printf("==>%s, %d\n", __FUNCTION__, __LINE__);${1}
+snippet prk
+	printk("==> ${1} \n"${2});${3}
+snippet prkd
+	printf("==>%s, %d\n", __FUNCTION__, __LINE__);${1}
+snippet fpr
+	fprintf(${1:stderr}, " %${2:s}\n"${3});${4}
+
+# funh  ==> Function comment
+# fun   ==> void funtion(xx){...}
+# seg   ==> //================
+# Function
+snippet fun
+	${1:void}
+    ${2:function_name}(${3})
+	{
+	}
+snippet fun-header
+	/**************************************************************************
+	**  Description: ${2: N/A}
+	**
+	**  Parameters: [In] ${3:N/A}
+	**              [Out]${4:N/A}
+	**  Return:  ${5:N/A}
+	**************************************************************************/
+snippet seg
+	//=============================================================================
+	// ${1}
+	//=============================================================================

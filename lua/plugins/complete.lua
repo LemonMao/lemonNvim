@@ -4,12 +4,14 @@ if not status then
     return
 end
 
+local luasnipm = require("luasnip")
+
 cmp.setup({
     snippet = {
         -- REQUIRED - you must specify a snippet engine
         expand = function(args)
-            vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
-            -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
+            -- vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
+            require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
         end,
     },
     window = {
@@ -21,8 +23,8 @@ cmp.setup({
         format = function(entry, item)
             local menu_icon = {
                 nvim_lsp = 'lsp',
-                vsnip = 'snip',
-                -- luasnip = 'snip',
+                -- vsnip = 'snip',
+                luasnip = 'snip',
                 buffer = 'buf',
                 path = 'path',
                 codeium = 'LLM',
@@ -32,13 +34,13 @@ cmp.setup({
             return item
         end,
     },
-    mapping = require("keybindings").cmp(cmp),
+    mapping = require("keybindings").cmp(cmp, luasnipm),
     sources = cmp.config.sources(
         {
             { name = "codeium" },
             { name = 'nvim_lsp' },
-            { name = 'vsnip' }, -- For vsnip users.
-            -- { name = 'luasnip' }, -- For luasnip users.
+            -- { name = 'vsnip' }, -- For vsnip users.
+            { name = 'luasnip' }, -- For luasnip users.
         },
         {
             { name = 'buffer' }, { name = 'path' }, { name = 'cmdline' }

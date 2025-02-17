@@ -13,7 +13,12 @@ require("plugins.format")
 require("plugins.complete")
 require("plugins.coding")
 require("plugins.gtags")
--- require("plugins.mini")
+require("plugins.codeium")
+
+-- Snip
+require("snip.cppSnip")
+require("snip.cSnip")
 
 -- VIM script configuration
 vim.cmd('source ~/.config/nvim/vs_cfg.vim')
+-- vim.cmd('source ~/.config/nvim/vim/log-highlight.vim')
