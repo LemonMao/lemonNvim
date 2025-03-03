@@ -14,6 +14,7 @@ require("plugins.complete")
 require("plugins.coding")
 require("plugins.gtags")
 require("plugins.codeium")
+require("plugins.async-run")
 
 -- Snip
 require("snip.cppSnip")

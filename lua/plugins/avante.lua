@@ -16,23 +16,50 @@ avanteOpts.opts = {
     -- provider = "deepseek",
     provider = "gemini",
     gemini = {
-        -- endpoint = "https://generativelanguage.googleapis.com/v1beta/", -- The endpoint for the Gemini API.  Currently unused.
+        endpoint = "https://generativelanguage.googleapis.com/v1alpha/models", -- The endpoint for the Gemini API.  Currently unused.
         -- model = "gemini-2.0-flash", -- The Gemini model to use (e.g., "gemini-2.0-flash").  Commented out alternative.
         model = "gemini-2.0-flash-thinking-exp", -- The Gemini model to use (e.g., "gemini-2.0-flash").
-        temperature = 0, -- Controls the randomness of the output. 0 is more deterministic.
-        max_tokens = 4096, -- The maximum number of tokens in the generated response.
+        temperature = 0.2, -- Controls the randomness of the output. 0 is more deterministic.
+        max_tokens = 8192, -- The maximum number of tokens in the generated response.
+        disable_tools = false,
     },
     vendors = {
-        deepseek = {
+        deepseek_r = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
-            model = "deepseek-coder",
+            -- model = "deepseek-chat",
+            model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
-            temperature = 0, -- adjust if needed
+            temperature = 0.2, -- adjust if needed
             max_tokens = 4096,
+            disable_tools = true,
+        },
+        deepseek_v = {
+            __inherited_from = "openai",
+            api_key_name = "DEEPSEEK_API_KEY",
+            endpoint = "https://api.deepseek.com",
+            model = "deepseek-chat",
+            -- model = "deepseek-reasoner",
+            timeout = 30000, -- timeout in milliseconds
+            temperature = 0.2, -- adjust if needed
+            max_tokens = 8192,
+            disable_tools = false,
         },
     },
+    web_search_engine = {
+        provider = "tavily",
+        providers = {
+            tavily = {
+                api_key_name = "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",
+                extra_request_body = {
+                    include_answer = "basic",
+                },
+                format_response_body = function(body) return body.anwser, nil end,
+            },
+        },
+    },
+
     behaviour = {
         auto_suggestions = false, -- Experimental stage
         auto_set_highlight_group = true,
@@ -81,7 +108,7 @@ avanteOpts.opts = {
         },
         submit = {
             normal = "<CR>",
-            insert = "<C-k>",
+            insert = nil,
         },
         sidebar = {
             apply_all = "A",
@@ -95,7 +122,8 @@ avanteOpts.opts = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
         wrap = true, -- similar to vim.o.wrap
-        width = 40, -- default % based on available width
+        width = 50, -- default % based on available width
+        height = 60,
         sidebar_header = {
             enabled = true, -- true, false to enable/disable the header
             align = "center", -- left, center, right for title
@@ -103,18 +131,18 @@ avanteOpts.opts = {
         },
         input = {
             prefix = "> ",
-            height = 20, -- Height of the input window in vertical layout
+            height = 10, -- Height of the input window in vertical layout
         },
         edit = {
             border = "rounded",
             start_insert = false, -- Start insert mode when opening the edit window
         },
         ask = {
-            floating = true, -- Open the 'AvanteAsk' prompt in a floating window
+            floating = false, -- Open the 'AvanteAsk' prompt in a floating window
             start_insert = false, -- Start insert mode when opening the ask window
             border = "rounded",
             ---@type "ours" | "theirs"
-            focus_on_apply = "ours", -- which diff to focus after applying
+            focus_on_apply = "theirs", -- which diff to focus after applying
         },
     },
     highlights = {
@@ -138,7 +166,77 @@ avanteOpts.opts = {
         debounce = 600,
         throttle = 600,
     },
+    -- @class AvanteHintsConfig
+    hints = {
+        enabled = true,
+    },
+    -- @class AvanteRepoMapConfig
+    repo_map = {
+        ignore_patterns = { "%.git", "%.worktree", "__pycache__", "node_modules" }, -- ignore files matching these
+        negate_patterns = {}, -- negate ignore files matching these.
+    },
+
 }
 
+---------------------------------------------
+---------         Usage          ------------
+---------------------------------------------
+-- 1.  **``, `@file`, `@quickfix`, `@diagnostics` 的用法：**
+--
+-- 这些都是在 AvanteInput 输入框中使用的“提及 (mentions)”，用于向 AI 提供额外的上下文信息，以便 AI 更好地理解你的问题和代码。
+--
+-- *   **`` (隐式提及 - Implicit Mention):  选中的代码块**
+--
+--     当你使用 `AvanteAsk` 或 `AvanteEdit` 命令时，如果你在编辑器中选中了代码块（通过 Visual 模式），Avante 会自动将选中的代码块作为上下文发送给 AI。这是一种隐式提及，不需要你手动输入任何特殊符号。
+--
+--     **示例：**
+--
+--     假设你在 Lua 文件中选中了一段函数代码，然后使用 `:AvanteAsk "解释这段函数的作用"`，AI 会自动理解你的问题是关于你选中的那段代码的。
+--
+-- *   **`@file`:  添加选中的文件到上下文**
+--
+--     在 AvanteInput 输入框中输入 `@file`，可以打开文件选择器。你可以选择一个或多个文件，Avante 会将这些文件的内容添加到 AI 的上下文信息中。这使得 AI 可以理解项目中的其他文件，从而提供更全面的代码建议。
+--
+--     **示例：**
+--
+--     在 AvanteInput 输入框中输入 `@file`，然后选择 `lua/avante/config.lua` 和 `lua/avante/api.lua` 两个文件。之后你提问 `:AvanteAsk "如何修改配置以支持新的 Provider?"`，AI 在回答时会考虑到 `config.lua` 和 `api.lua` 的内容。
+--
+-- *   **`@quickfix`: 添加 Quickfix 列表中的文件到上下文**
+--
+--     在 AvanteInput 输入框中输入 `@quickfix`，Avante 会将当前 Quickfix 列表中的所有文件添加到 AI 的上下文信息中。这在你处理代码错误或警告列表时非常有用，可以让 AI 了解整个问题域。
+--
+--     **示例：**
+--
+--     假设你使用 `:checkhealth` 或其他工具生成了一个 Quickfix 列表，其中包含多个错误文件。在 AvanteInput 输入框中输入 `@quickfix`，然后提问 `:AvanteAsk "如何修复这些错误?"`，AI 会考虑到 Quickfix 列表中的所有文件，帮助你分析和解决问题。
+--
+-- *   **`@diagnostics`:  包含诊断信息到上下文中**
+--
+--     在 AvanteInput 输入框中输入 `@diagnostics`，Avante 会将当前缓冲区（或选定代码块）的诊断信息（例如，来自 LSP 的错误、警告等）添加到 AI 的上下文中。这能帮助 AI 理解代码中存在的问题，并提供更精确的修复建议。
+--
+--     **示例：**
+--
+--     假设你的代码中存在一些 TypeScript 编译错误。在 AvanteInput 输入框中输入 `@diagnostics`，然后提问 `:AvanteAsk "如何修复这些 TypeScript 错误?"`，AI 在回答时会考虑到代码的诊断信息，给出更具针对性的修复建议。
+--
+-- 2.  **`/` 命令的用法，例如 `/lines`：**
+--
+-- `/` 命令是在 AvanteInput 输入框中使用的特殊命令，用于控制 Avante 侧边栏的行为和功能。
+--
+-- *   **`/lines <start>-<end> <question>`:  针对特定代码行提问**
+--
+--     `/lines` 命令允许你指定代码的行范围，并针对这些行提出问题。这在你想要 AI 专注于代码的特定部分时非常有用。
+--
+--     **示例：**
+--
+--     在 AvanteInput 输入框中输入 `/lines 10-20 如何优化这段循环的性能?`，Avante 会将你的问题限定在当前文件的第 10 行到第 20 行代码范围内，并向 AI 提问关于这段代码性能优化的问题。
+--
+--     **其他常用的 `/` 命令 (基于代码实现，但 README.md 中未完全列出，以下列出代码中实现的命令):**
+--
+--     *   `/help`: 显示帮助信息，列出所有可用的 `/` 命令及其描述。
+--     *   `/clear`: 清空聊天历史记录。
+--     *   `/reset`: 重置 AI 的记忆 (memory)。
+--
+-- *   Use `AvanteAsk` when you have a specific question about your code or need targeted code suggestions.
+-- *   Use `AvanteEdit` when you want the AI to modify a specific block of code you've selected.
+-- *   Use `AvanteChat` for general discussions and exploration of your codebase with the AI.
 
 return avanteOpts

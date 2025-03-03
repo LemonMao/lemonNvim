@@ -220,7 +220,7 @@ project.setup({
   -- lsp, while **"pattern"** uses vim-rooter like glob pattern matching. Here
   -- order matters: if one is not detected, the other is used as fallback. You
   -- can also delete or rearangne the detection methods.
-  detection_methods = { "lsp", "pattern" },
+  detection_methods = { "pattern" },
 
   -- All the patterns used to detect root dir, when **"pattern"** is in
   -- detection_methods
@@ -272,9 +272,9 @@ vim.api.nvim_create_user_command('TransferToggle', function()
   _G.transfer_upload_auto_enabled = not _G.transfer_upload_auto_enabled
 
   if _G.transfer_upload_auto_enabled then
-    vim.notify("TransferUpload : 启用", vim.log.levels.INFO, { title = "TransferToggle" })
+    vim.notify("Project Upload : 启用", vim.log.levels.INFO, { title = "TransferToggle" })
   else
-    vim.notify("TransferUpload : 禁用", vim.log.levels.INFO, { title = "TransferToggle" })
+    vim.notify("Project Upload : 禁用", vim.log.levels.INFO, { title = "TransferToggle" })
   end
 end, { desc = "切换 Buffer 保存时自动 TransferUpload 功能" })
 
@@ -290,6 +290,62 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   desc = "Buffer 保存后自动执行 TransferUpload (可使用 :TransferToggle 切换开关)",
 })
 -- ## ------------------------------ ##
--- ##
+-- ## LLM Context generation
+-- ## ------------------------------ ##
+--
+
+local function get_context_file()
+    return '/tmp/llm_' .. vim.fn.getpid() .. '.context'
+end
+
+local function ensure_context_file()
+    local file = get_context_file()
+    if vim.fn.filereadable(file) == 0 then
+        vim.fn.writefile({}, file)
+        vim.cmd('edit ' .. file)
+    end
+end
+
+local function append_content(content)
+    ensure_context_file()
+    local file = get_context_file()
+    local fd = io.open(file, 'a')
+    if fd then
+        fd:write('----------------------------------------------------\n')
+        fd:write(content .. '\n')
+        fd:close()
+    end
+end
+
+local function add_context()
+    local mode = vim.fn.mode()
+    local content = ''
+
+    if mode:match('[vV]') then -- Visual mode
+        local save_reg = vim.fn.getreg('"')
+        local save_regtype = vim.fn.getregtype('"')
+        vim.cmd('silent normal! y')
+        content = vim.fn.getreg('"')
+        vim.fn.setreg('"', save_reg, save_regtype)
+    else -- Normal mode
+        content = vim.fn.expand('<cword>')
+    end
+
+    append_content(content)
+end
+
+local function clean_context()
+    local file = get_context_file()
+    vim.fn.writefile({}, file)
+    vim.cmd('edit ' .. file)
+end
+
+-- Key mappings
+vim.keymap.set({'n', 'x'}, ',cs', add_context, { noremap = true, silent = true })
+vim.keymap.set('n', ',cl', clean_context, { noremap = true, silent = true })
+
+
+-- ## ------------------------------ ##
+-- ## Transfer
 -- ## ------------------------------ ##
 --

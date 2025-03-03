@@ -38,10 +38,10 @@ map("n", "<C-h>", "<C-w>h", {desc = "Jump to left windown"})
 map("n", "<C-j>", "<C-w>j", {desc = "Jump to down windown"})
 map("n", "<C-k>", "<C-w>k", {desc = "Jump to up windown"})
 map("n", "<C-l>", "<C-w>l", {desc = "Jump to right windown"})
-map("n", "<A-h>", ":vertical resize -20<CR>", { desc = "Reduce vertical windown size" })
-map("n", "<A-l>", ":vertical resize +20<CR>", { desc = "Enlarge vertical windown size" })
-map("n", "<A-k>", ":resize -20<CR>", { desc = "Reduce horizonal windown size" })
-map("n", "<A-j>", ":resize +20<CR>", { desc = "Enlarge horizonal windown size" })
+map("n", "<A-h>", ":vertical resize -15<CR>", { desc = "Reduce vertical windown size" })
+map("n", "<A-l>", ":vertical resize +15<CR>", { desc = "Enlarge vertical windown size" })
+map("n", "<A-k>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
+map("n", "<A-j>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
 -- 等比例 <C-w>=
 -- 关当前窗口 <C-w>c
 map("v", "<", "<gv", { desc = "Visual indent" })
@@ -50,17 +50,36 @@ map("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move selected text down" })
 map("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move selected text up" })
 map("n", "<C-e>", ":b# <CR>", { desc = "switch current buffer" })
 -- Bufferline
-map("n", "<M-b>h", ":BufferLineCyclePrev<CR>", { desc = "BufferLineCyclePrev"})
-map("n", "<M-b>l", ":BufferLineCycleNext<CR>", { desc = "BufferLineCycleNext"})
-map("n", "<M-w>", ":bdelete<CR>", { desc = "BufferLineCloseCurrent"})
+map("n", "<S-h>", ":BufferLineCyclePrev<CR>", { desc = "BufferLineCyclePrev"})
+map("n", "<S-l>", ":BufferLineCycleNext<CR>", { desc = "BufferLineCycleNext"})
+map("n", "<S-w>", ":bdelete<CR>", { desc = "BufferLineCloseCurrent"})
+-- Close window
+local function toggle_quickfix()
+  local has_quickfix = false
+  for _, win in ipairs(vim.fn.getwininfo()) do
+    if win.quickfix == 1 then
+      has_quickfix = true
+      break
+    end
+  end
+  if has_quickfix then
+    vim.cmd('cclose')
+  else
+    vim.cmd('copen')
+  end
+end
+map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
+map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
 
 -- ## ------------------------------ ##
 -- ## AI
 -- ## ------------------------------ ##
 -- Avante
 -- map({ "n", "v" }, "<leader>aa", ":AvanteAsk <CR>", { desc = "open dir tree" })
-map({ "n", "v" }, "<leader>ac", ":AvanteClear <CR>", { desc = "Avante: Clear the chat box content" })
-map({ "n", "v" }, "<leader>as", ":AvanteSwitchProvider <CR>", { desc = "Avante: Switch provider" })
+map("n", "<leader>as", ":AvanteSwitchProvider<right>", { desc = "Avante: Switch provider" })
+map("n", "<leader>al", ":AvanteClear<CR>", { desc = "Avante: Clear the chat box content" })
+map("n", "<A-a>", ":AvanteToggle<CR>", { desc = "Avante: Toggle sidebar" })
+map("i", "<A-a>", "<Esc>:AvanteToggle <CR>", { desc = "Avante: Toggle sidebar" })
 map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual", true)<CR>', { desc = 'Codeium Manual Mode On' })
 
 -- ## ------------------------------ ##
@@ -155,10 +174,10 @@ vim.keymap.set('n', 'yp', function()
     end
 
     local current_dir = vim.fn.fnamemodify(current_file, ":h")
-    local relative_dir = vim.fn.fnamemodify(current_dir, ":~:.") -- ":~:." makes it relative to cwd, and ensures directory format
+    local absolute_filepath = vim.fn.fnamemodify(current_file, ":p") -- ":p" gets the absolute path
 
-    vim.cmd('let @+ = expand("' .. relative_dir .. '")')
-    vim.notify("Relative directory path copied to clipboard:\n" .. relative_dir, vim.log.levels.INFO, { title = "Copy Relative Dir Path" })
+    vim.cmd('let @+ = expand("' .. absolute_filepath .. '")')
+    vim.notify("Absolute file path copied to clipboard:\n" .. absolute_filepath, vim.log.levels.INFO, { title = "Copy Absolute File Path" })
 end, { desc = "Copy Relative Directory Path to Clipboard" })
 --
 -- insert 模式下，跳到行首行尾
@@ -177,24 +196,8 @@ map('x', '<leader>m', '<leader>s8gv<leader>k', { desc = "Mark word.", remap = tr
 map('n', '<leader>M', '<leader>s9<leader>K', { desc = "", remap = true })
 map('n', '<C-n>', ':Noice dismiss<CR> :silent noh<CR>', { desc = "Dismiss Highlight word and Noice message" })
 --
--- Close window
-local function toggle_quickfix()
-  local has_quickfix = false
-  for _, win in ipairs(vim.fn.getwininfo()) do
-    if win.quickfix == 1 then
-      has_quickfix = true
-      break
-    end
-  end
-  if has_quickfix then
-    vim.cmd('cclose')
-  else
-    vim.cmd('copen')
-  end
-end
-map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
-map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
-
+-- Markdown
+map('i', '<A-`>', "``````<left><left><left>", { desc = "Insert Markdown Code Block" })
 
 -- ## ------------------------------ ##
 -- ## Coding
