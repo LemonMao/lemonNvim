@@ -40,31 +40,10 @@ vim.api.nvim_create_autocmd("QuickFixCmdPost", {
 -- require("trouble").setup{}
 
 
-
 -- ## ------------------------------ ##
 -- ## Mini
 -- ## ------------------------------ ##
 require('mini.animate').setup()
-require('mini.comment').setup({
-    mappings = {
-        options = {
-            custom_commentstring = nul,
-        },
-        -- Toggle comment (like `gcip` - comment inner paragraph) for both
-        -- Normal and Visual modes
-        comment = '<leader>cs',
-
-        -- Toggle comment on current line
-        comment_line = '<leader>cc',
-
-        -- Toggle comment on visual selection
-        comment_visual = '<leader>cs',
-
-        -- Define 'comment' textobject (like `dgc` - delete whole comment block)
-        -- Works also in Visual mode if mapping differs from `comment_visual`
-        textobject = '<leader>cs',
-    }
-})
 require('mini.cursorword').setup()
 require('mini.hipatterns').setup({
     highlighters = {
@@ -73,6 +52,8 @@ require('mini.hipatterns').setup({
         hack  = { pattern = '%f[%w]()HACK()%f[%W]',  group = 'MiniHipatternsHack'  },
         todo  = { pattern = '%f[%w]()TODO()%f[%W]',  group = 'MiniHipatternsTodo'  },
         note  = { pattern = '%f[%w]()NOTE()%f[%W]',  group = 'MiniHipatternsNote'  },
+        fail  = { pattern = '%f[%w]()FAIL()%f[%W]',  group = 'MiniHipatternsFixme'  },
+        pass  = { pattern = '%f[%w]()PASS()%f[%W]',  group = 'MiniHipatternsTodo'  },
 
         -- Highlight hex color strings (`#rrggbb`) using that color
         hex_color = require('mini.hipatterns').gen_highlighter.hex_color(),
@@ -341,9 +322,36 @@ local function clean_context()
 end
 
 -- Key mappings
-vim.keymap.set({'n', 'x'}, ',cs', add_context, { noremap = true, silent = true })
+vim.keymap.set({'x'}, ',cc', add_context, { noremap = true, silent = true })
 vim.keymap.set('n', ',cl', clean_context, { noremap = true, silent = true })
 
+
+-- ## ------------------------------ ##
+-- ## Custom Commands
+-- ## ------------------------------ ##
+--
+-- Open a vertical split and either switch to an existing terminal or create a new one
+vim.api.nvim_create_user_command('TerminalSplit', function()
+    local term_bufnr = nil
+    -- Find the first existing, loaded terminal buffer
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.api.nvim_buf_get_option(bufnr, 'buftype') == 'terminal' then
+            term_bufnr = bufnr
+            break
+        end
+    end
+
+    -- Perform the split
+    vim.cmd('vsplit')
+
+    if term_bufnr then
+        -- If an existing terminal buffer was found, switch the new window to it
+        vim.api.nvim_win_set_buf(0, term_bufnr) -- 0 refers to the current window
+    else
+        -- Otherwise, create a new terminal in the new window
+        vim.cmd('terminal')
+    end
+end, { desc = "Open a vsplit and switch to existing terminal or create a new one" })
 
 -- ## ------------------------------ ##
 -- ## Transfer

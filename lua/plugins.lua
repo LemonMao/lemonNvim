@@ -48,11 +48,11 @@ require("lazy").setup({
             "stevearc/dressing.nvim",
             "nvim-lua/plenary.nvim",
             "MunifTanjim/nui.nvim",
+            "nvim-treesitter/nvim-treesitter",
             --- The below dependencies are optional,
             "nvim-telescope/telescope.nvim", -- for file_selector provider telescope
             "hrsh7th/nvim-cmp", -- autocompletion for avante commands and mentions
             "nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
-            "zbirenbaum/copilot.lua", -- for providers='copilot'
             {
                 -- support for image pasting
                 "HakonHarnes/img-clip.nvim",
@@ -217,9 +217,11 @@ require("lazy").setup({
         },
     },
     {
+        'scrooloose/nerdcommenter',
+    },
+    {
         -- code tools
         "echasnovski/mini.animate",
-        "echasnovski/mini.comment",
         "echasnovski/mini.cursorword",
         "echasnovski/mini.hipatterns",
         "echasnovski/mini.align",
@@ -233,6 +235,7 @@ require("lazy").setup({
     },
     { -- highlight word
         "Mr-LLLLL/interestingwords.nvim",
+        -- "vim-scripts/Mark",
     },
     { -- strcutre tag list
         'preservim/tagbar',

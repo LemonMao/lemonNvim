@@ -66,6 +66,7 @@ snippet def4 #ifndef macro #define macro #endif
 snippet if
 	if (${1:/* condition */})
 	{
+		${2: /* code */}
 	}
 snippet el
 	else
@@ -75,7 +76,7 @@ snippet el
 snippet elif
 	else if (${1})
 	{
-		${2}
+		${2: /* code */}
 	}
 
 # do    ==> do{...}while()
@@ -84,24 +85,27 @@ snippet elif
 snippet while-do
 	do
 	{
+		${2: /* code */}
 	} while (${1:/* condition */});
 snippet while
 	while (${1:/* condition */})
 	{
+		${2: /* code */}
 	}
 snippet fori
 	for (${2:i} = 0; $2 < ${1:count}; $2${3:++})
 	{
-	    ${4}
+		${4: /* code */}
 	}
 snippet forx
 	for (${1:i = 0}; ${2:i < 10}; ${3:i++})
 	{
+		${4: /* code */}
 	}
 snippet foreach
 	for (auto& obj : ${1})
 	{
-	    ${2}
+		${2: /* code */}
 	}
 snippet switch
 	switch (${1:0})
@@ -156,8 +160,9 @@ snippet fpr
 # Function
 snippet fun
 	${1:void}
-    ${2:function_name}(${3})
+	${2:function_name}(${3})
 	{
+		${4:/* code */}
 	}
 snippet fun-header
 	/**************************************************************************

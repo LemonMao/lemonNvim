@@ -25,8 +25,40 @@ map("n", "s", "", { desc = "Undo s key" })
 -- ## -------------------------------------- ##
 map("n", "<F1>", ":Dashboard<CR>", { desc = "Dashboard" })
 map("n", "<F2>", ":Telescope projects<CR>", { desc = "Telescope projects" })
-map('n', '<F3>', ":1,$s///g", { desc = "Replace all" })
--- map("n", "<F4>", "", { desc = "Telescope projects" })
+-- Enhanced F3 keybinding for different modes
+-- map('n', '<F3>', ":1,$s/\<<C-R><C-W>\>//g", { desc = "Replace all" })
+map({'n','x'}, '<F3>', function()
+    local mode = vim.fn.mode()
+    local text = ""
+    local start_line = 1
+    local end_line = vim.fn.line('$')
+
+    if mode == 'n' then
+        text = vim.fn.expand('<cword>')
+    elseif mode == 'v' or mode == 'V' then
+        vim.cmd('silent normal! "xy')
+        text = vim.fn.getreg('x')
+    end
+
+    local escaped_text = vim.fn.escape(text, '/\\')
+    local replace_with = vim.fn.input("Replace '" .. text .. "' with: ")
+    local lines_range = vim.fn.input("Lines to replace (default: all): ", start_line .. "," .. end_line)
+
+    -- If user pressed enter without input, use default range
+    if lines_range == "" then
+        lines_range = "1,$"
+    end
+
+    -- Get current cursor position
+    local pos = vim.api.nvim_win_get_cursor(0)
+
+    -- Execute the substitution
+    vim.cmd(lines_range .. 's/\\V' .. escaped_text .. '\\m/' .. replace_with .. '/g')
+
+    -- Restore cursor position
+    vim.api.nvim_win_set_cursor(0, pos)
+end, { desc = "Replace text in file" })
+map("n", "<F9>", ":Cscope find s ", { desc = "Gtags: find references" })
 
 -- ## ------------------------------ ##
 -- ## Windows Hotkeys
@@ -40,8 +72,8 @@ map("n", "<C-k>", "<C-w>k", {desc = "Jump to up windown"})
 map("n", "<C-l>", "<C-w>l", {desc = "Jump to right windown"})
 map("n", "<A-h>", ":vertical resize -15<CR>", { desc = "Reduce vertical windown size" })
 map("n", "<A-l>", ":vertical resize +15<CR>", { desc = "Enlarge vertical windown size" })
-map("n", "<A-k>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
-map("n", "<A-j>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
+map("n", "<A-j>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
+map("n", "<A-k>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
 -- 等比例 <C-w>=
 -- 关当前窗口 <C-w>c
 map("v", "<", "<gv", { desc = "Visual indent" })
@@ -71,12 +103,18 @@ end
 map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
 map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
 
+-- Terminal Mode
+--map('t', '<C-e>', '<C-\\><C-n>:b# <CR>', { desc = "Exit terminal mode and switch buffer" })
+map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
+map('n', '<leader>vt', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
+map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
+map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to right windown from terminal windown"})
+
 -- ## ------------------------------ ##
 -- ## AI
 -- ## ------------------------------ ##
 -- Avante
 -- map({ "n", "v" }, "<leader>aa", ":AvanteAsk <CR>", { desc = "open dir tree" })
-map("n", "<leader>as", ":AvanteSwitchProvider<right>", { desc = "Avante: Switch provider" })
 map("n", "<leader>al", ":AvanteClear<CR>", { desc = "Avante: Clear the chat box content" })
 map("n", "<A-a>", ":AvanteToggle<CR>", { desc = "Avante: Toggle sidebar" })
 map("i", "<A-a>", "<Esc>:AvanteToggle <CR>", { desc = "Avante: Toggle sidebar" })
@@ -101,7 +139,44 @@ map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message 
 map("n", "sc", ":Telescope ", { desc = "Type :Telescope command" })
 map("n", "sf", ":Telescope find_files<CR>", { desc = "Search for files in PWD" })
 map("n", "sg", ":Telescope live_grep<CR>", { desc = "Searches for the string in your PWD" })
-map("n", "sgd", ":Telescope live_grep search_dirs={'", { desc = "Searches for the string in your PWD with dir" })
+map("n", "sgd", function()
+    local current_file = vim.api.nvim_buf_get_name(0)
+    local search_dir
+
+    if vim.fn.empty(current_file) == 1 then
+        vim.notify("No file associated with the current buffer. Grepping PWD.", vim.log.levels.WARN, { title = "Live Grep Dir" })
+        require('telescope.builtin').live_grep()
+        return
+    end
+
+    local current_dir = vim.fn.fnamemodify(current_file, ":h")
+
+    -- Prompt the user, pre-filling with the current directory and offering directory completion
+    local user_input_dir = vim.fn.input("Search directory: ", current_dir, "dir")
+
+    -- Check if user cancelled (pressed Esc or <C-c>)
+    if user_input_dir == nil then
+        vim.notify("Search cancelled.", vim.log.levels.INFO, { title = "Live Grep Dir" })
+        return
+    end
+
+    -- Check if user provided an empty path (e.g., deleted everything and pressed Enter)
+    if vim.fn.empty(user_input_dir) == 1 then
+        vim.notify("No directory provided.", vim.log.levels.WARN, { title = "Live Grep Dir" })
+        return
+    end
+
+    search_dir = user_input_dir
+
+    -- Ensure the chosen directory exists before searching
+    if vim.fn.isdirectory(search_dir) == 1 then
+        require('telescope.builtin').live_grep({ search_dirs = { search_dir } })
+    else
+        vim.notify("Directory not found or invalid: " .. search_dir, vim.log.levels.ERROR, { title = "Live Grep Dir" })
+        -- Optionally, you could fall back to PWD grep here if desired:
+        -- require('telescope.builtin').live_grep()
+    end
+end, { desc = "Grep in directory (prompt)" })
 map("n", "sgg", ":Telescope grep_string<CR>", { desc = "Searches for the string under your cursor in your PWD" })
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Lists previously open files" })
@@ -113,7 +188,7 @@ map("n", "sk", ":Telescope keymaps <CR>", { desc = "Lists manpage entries" })
 -- Telescope 列表中 插入模式快捷键
 local open_with_trouble = require("trouble.sources.telescope").open
 -- Use this to add more results without clearing the trouble list
-local add_to_trouble = require("trouble.sources.telescope").add
+-- local add_to_trouble = require("trouble.sources.telescope").add
 
 pluginKeys.telescopeList = {
     i = {
@@ -160,10 +235,12 @@ map('n', 'gs', ':ClangdSwitchSourceHeader<CR>', { desc = "LSP switch source head
 --
 -- yank/paste in system clipboard
 -- map('n', 'yp', ':let @+ = expand("%:p:h:.")<CR>', { desc = "Copy current file path to system clipboard" })
+map('n', '<C-A>', 'gg"+yG', { desc = "Copy all the contents in system clipboard" })
 map('n', 'sy', '"+y', { desc = "Copy to system clipboard" })
 map('n', 'sp', '"+p', { desc = "Paste from system clipboard" })
 map('x', 'sy', '"+y', { desc = "Copy to system clipboard" })
 map('x', 'sp', '"+p', { desc = "Paste from system clipboard" })
+map('n', '<C-a>', 'ggVG', { desc = "Select all the content of current buffer" })
 map('x', '<C-c>', '"+y', { desc = "Copy to  system clipboard" })
 map('i', '<C-v>', '"+p', { desc = "Paste from system clipboard" })
 vim.keymap.set('n', 'yp', function()
@@ -197,7 +274,17 @@ map('n', '<leader>M', '<leader>s9<leader>K', { desc = "", remap = true })
 map('n', '<C-n>', ':Noice dismiss<CR> :silent noh<CR>', { desc = "Dismiss Highlight word and Noice message" })
 --
 -- Markdown
-map('i', '<A-`>', "``````<left><left><left>", { desc = "Insert Markdown Code Block" })
+map('i', '<A-`>', "``````<left><left><left>", { desc = "Markdown: Insert Code Block" })
+map('i', '<A-">', "\"\"\"\"\"\"<left><left><left>", { desc = "Markdown: Multiple comment" })
+
+-- Virtual mode text wrapping
+map('v', '<A-`>', 'c`<C-r>"`<Esc>', { desc = "Wrap `selection` with backticks" })
+map('v', '<A-[>', 'c[<C-r>"]<Esc>', { desc = "Wrap selection with square brackets" })
+map('v', '<A-{>', 'c{<C-r>"}<Esc>', { desc = "Wrap selection with curly braces" })
+map('v', '<A-">', 'c"<C-r>""<Esc>', { desc = "Wrap selection with double quotes" })
+map('v', '<A-\'>', "c'<C-r>\"'<Esc>", { desc = "Wrap selection with single quotes" })
+map('v', '<A-<>', 'c<<C-r>"><Esc>', { desc = "Wrap selection with angle brackets" })
+map('v', '<A-(>', 'c(<C-r>")<Esc>', { desc = "Wrap selection with parentheses" })
 
 -- ## ------------------------------ ##
 -- ## Coding

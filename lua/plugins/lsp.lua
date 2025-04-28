@@ -26,6 +26,39 @@ function LspKeybind(client, bufnr)
   require("keybindings").lspKeybinding(buf_set_keymap)
 end
 
+local ensure_mason_packages = {
+    -- formater
+    "clang-format",
+    "stylua",
+    "black",
+    -- linter
+    "codespell",
+}
+
+vim.api.nvim_create_user_command("MasonEnsurePackages", function()
+    local mr = require("mason-registry")
+    local installed_any = false
+
+    for _, pkg_name in ipairs(ensure_mason_packages) do
+        local pkg = mr.get_package(pkg_name)
+        if not pkg:is_installed() then
+            installed_any = true
+            print("Mason: Installing " .. pkg_name .. "...")
+            -- Asynchronous installation, does not block Neovim
+            pkg:install():on("closed", function()
+                -- Optional: Callback after installation is complete
+                vim.schedule(function()
+                    print("Mason: Successfully installed " .. pkg_name)
+                end)
+            end)
+        end
+    end
+
+    if not installed_any then
+        print("Mason: All specified packages are already installed.")
+    end
+end, {})
+
 mason.setup({
   ui = {
     icons = {
@@ -37,6 +70,13 @@ mason.setup({
 
   log_level = vim.log.levels.INFO,
   max_concurrent_installers = 10,
+
+  -- A list of packages to ensure are installed. Mason will install these
+  -- automatically if they are not already installed.
+  ensure_installed = {
+    -- Formatters
+    "clang-format",
+  },
 })
 mason_lspconfig.setup({
   -- A list of servers to automatically install if they're not already installed.
@@ -87,6 +127,9 @@ nvim_lsp.pylsp.setup{
   }
 }
 
+-- if want to make clangd to support c++20, create .clangd and add:
+-- CompileFlags:
+--   Add: [-std=c++20]
 nvim_lsp.clangd.setup{
   capabilities = lsp_capabilities,
   on_attach = LspKeybind,

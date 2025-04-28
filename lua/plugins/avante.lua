@@ -6,7 +6,7 @@ avanteOpts.opts = {
     -- WARNING: Since auto-suggestions are a high-frequency operation and therefore expensive,
     -- currently designating it as `copilot` provider is dangerous because: https://github.com/yetone/avante.nvim/issues/1048
     -- Of course, you can reduce the request frequency by increasing `suggestion.debounce`.
-    -- auto_suggestions_provider = "claude",
+    auto_suggestions_provider = "gemini_flash",
     -- claude = {
     --     endpoint = "https://api.anthropic.com",
     --     model = "claude-3-5-sonnet-20241022",
@@ -16,9 +16,8 @@ avanteOpts.opts = {
     -- provider = "deepseek",
     provider = "gemini",
     gemini = {
-        endpoint = "https://generativelanguage.googleapis.com/v1alpha/models", -- The endpoint for the Gemini API.  Currently unused.
-        -- model = "gemini-2.0-flash", -- The Gemini model to use (e.g., "gemini-2.0-flash").  Commented out alternative.
-        model = "gemini-2.0-flash-thinking-exp", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+        endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
+        model = "gemini-2.5-pro-exp-03-25", -- The Gemini model to use (e.g., "gemini-2.0-flash").
         temperature = 0.2, -- Controls the randomness of the output. 0 is more deterministic.
         max_tokens = 8192, -- The maximum number of tokens in the generated response.
         disable_tools = false,
@@ -32,7 +31,7 @@ avanteOpts.opts = {
             model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
             temperature = 0.2, -- adjust if needed
-            max_tokens = 4096,
+            max_tokens = 8192,
             disable_tools = true,
         },
         deepseek_v = {
@@ -46,12 +45,20 @@ avanteOpts.opts = {
             max_tokens = 8192,
             disable_tools = false,
         },
+        gemini_flash = {
+            __inherited_from = "gemini",
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+            model = "gemini-2.0-flash",
+            temperature = 0.2,
+            max_tokens = 8192,
+            disable_tools = false,
+        },
     },
     web_search_engine = {
         provider = "tavily",
         providers = {
             tavily = {
-                api_key_name = "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",
+                api_key_name = "TAVILY_API_KEY",
                 extra_request_body = {
                     include_answer = "basic",
                 },
@@ -61,13 +68,17 @@ avanteOpts.opts = {
     },
 
     behaviour = {
+        auto_focus_sidebar = true,
         auto_suggestions = false, -- Experimental stage
+        auto_suggestions_respect_ignore = false,
         auto_set_highlight_group = true,
         auto_set_keymaps = true,
         auto_apply_diff_after_generation = false,
+        jump_result_buffer_on_finish = false,
         support_paste_from_clipboard = false,
-        minimize_diff = true, -- Whether to remove unchanged lines when applying a code block
-        enable_token_counting = true, -- Whether to enable token counting. Default to true.
+        minimize_diff = true,
+        enable_token_counting = true,
+        enable_cursor_planning_mode = false,
     },
     ---Specify the special dual_boost mode
     ---1. enabled: Whether to enable dual_boost mode. Default to false.
@@ -81,7 +92,7 @@ avanteOpts.opts = {
     dual_boost = {
         enabled = false,
         first_provider = "gemini",
-        second_provider = "deepseek",
+        second_provider = "deepseek_v",
         prompt = "Based on the two reference outputs below, generate a response that incorporates elements from both but reflects your own judgment and unique perspective. Do not provide any explanation, just give the response directly. Reference Output 1: [{{provider1_output}}], Reference Output 2: [{{provider2_output}}]",
         timeout = 60000, -- Timeout in milliseconds
     },
@@ -117,7 +128,18 @@ avanteOpts.opts = {
             reverse_switch_windows = "<S-Tab>",
         },
     },
-    hints = { enabled = true },
+    -- ask = "<leader>aa",
+    -- edit = "<leader>ae",
+    -- refresh = "<leader>ar",
+    -- focus = "<leader>af",
+    -- toggle = {
+    --   default = "<leader>at",
+    --   debug = "<leader>ad",
+    --   hint = "<leader>ah",
+    --   suggestion = "<leader>as",
+    --   repomap = "<leader>aR",
+    -- },
+
     windows = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
@@ -163,13 +185,24 @@ avanteOpts.opts = {
         override_timeoutlen = 500,
     },
     suggestion = {
-        debounce = 600,
-        throttle = 600,
+        -- 去抖（debounce）和节流（throttle）控制建议频率
+        debounce = 800,
+        throttle = 800,
     },
     -- @class AvanteHintsConfig
     hints = {
-        enabled = true,
+        -- display the key map in right place
+        enabled = false,
     },
+    tokenizer = "tiktoken",
+    rag_service = {
+        enabled = false, -- Enables the rag service, requires OPENAI_API_KEY to be set
+        provider = "openai", -- The provider to use for RAG service. eg: openai or ollama
+        llm_model = "", -- The LLM model to use for RAG service
+        embed_model = "", -- The embedding model to use for RAG service
+        endpoint = "https://api.openai.com/v1", -- The API endpoint for RAG service
+    },
+
     -- @class AvanteRepoMapConfig
     repo_map = {
         ignore_patterns = { "%.git", "%.worktree", "__pycache__", "node_modules" }, -- ignore files matching these

@@ -26,7 +26,7 @@ conform.setup({
   -- You can also define any custom formatters here.
   formatters = {
     clang_format = {
-      prepend_args = { "--style=file", "--fallback-style=LLVM" },
+      prepend_args = { "--style=file", "--fallback-style=Google" },
       -- prepend_args = { "--style=file:/home/myname/myproject1/.clang-format" },
     },
   },
