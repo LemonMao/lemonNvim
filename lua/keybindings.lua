@@ -21,13 +21,25 @@ local pluginKeys = {}
 map("n", "s", "", { desc = "Undo s key" })
 
 -- ## -------------------------------------- ##
--- ## F1 ~~ F12 Hotkeys
+-- ## Functions
 -- ## -------------------------------------- ##
-map("n", "<F1>", ":Dashboard<CR>", { desc = "Dashboard" })
-map("n", "<F2>", ":Telescope projects<CR>", { desc = "Telescope projects" })
--- Enhanced F3 keybinding for different modes
--- map('n', '<F3>', ":1,$s/\<<C-R><C-W>\>//g", { desc = "Replace all" })
-map({'n','x'}, '<F3>', function()
+-- Close window
+local function toggle_quickfix()
+  local has_quickfix = false
+  for _, win in ipairs(vim.fn.getwininfo()) do
+    if win.quickfix == 1 then
+      has_quickfix = true
+      break
+    end
+  end
+  if has_quickfix then
+    vim.cmd('cclose')
+  else
+    vim.cmd('copen')
+  end
+end
+
+local function replace_text_in_cursor()
     local mode = vim.fn.mode()
     local text = ""
     local start_line = 1
@@ -57,93 +69,23 @@ map({'n','x'}, '<F3>', function()
 
     -- Restore cursor position
     vim.api.nvim_win_set_cursor(0, pos)
-end, { desc = "Replace text in file" })
-map("n", "<F9>", ":Cscope find s ", { desc = "Gtags: find references" })
-
--- ## ------------------------------ ##
--- ## Windows Hotkeys
--- ## Moving/Switch/Paging/Zooming/Split
--- ## ------------------------------ ##
--- map("n", "sv", ":vsp<CR>", { desc = "" })
--- map("n", "sh", ":sp<CR>", { desc = "" })
-map("n", "<C-h>", "<C-w>h", {desc = "Jump to left windown"})
-map("n", "<C-j>", "<C-w>j", {desc = "Jump to down windown"})
-map("n", "<C-k>", "<C-w>k", {desc = "Jump to up windown"})
-map("n", "<C-l>", "<C-w>l", {desc = "Jump to right windown"})
-map("n", "<A-h>", ":vertical resize -15<CR>", { desc = "Reduce vertical windown size" })
-map("n", "<A-l>", ":vertical resize +15<CR>", { desc = "Enlarge vertical windown size" })
-map("n", "<A-j>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
-map("n", "<A-k>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
--- 等比例 <C-w>=
--- 关当前窗口 <C-w>c
-map("v", "<", "<gv", { desc = "Visual indent" })
-map("v", ">", ">gv", { desc = "Visual indent" })
-map("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move selected text down" })
-map("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move selected text up" })
-map("n", "<C-e>", ":b# <CR>", { desc = "switch current buffer" })
--- Bufferline
-map("n", "<S-h>", ":BufferLineCyclePrev<CR>", { desc = "Switch to previous buffer"})
-map("n", "<S-l>", ":BufferLineCycleNext<CR>", { desc = "Switch to next buffer"})
-map("n", "<S-n>", ":BufferLineMoveNext<CR>", { desc = "Move current buffer to next location"})
-map("n", "<S-p>", ":BufferLineMovePrev<CR>", { desc = "Move current buffer to previous location"})
-map("n", "<S-w>", ":bdelete!<CR>", { desc = "BufferLineCloseCurrent"})
-map('n', '<S-t>', '<Cmd>BufferLineGroupToggle Term<CR>', {noremap = true, silent = true})
--- Close window
-local function toggle_quickfix()
-  local has_quickfix = false
-  for _, win in ipairs(vim.fn.getwininfo()) do
-    if win.quickfix == 1 then
-      has_quickfix = true
-      break
-    end
-  end
-  if has_quickfix then
-    vim.cmd('cclose')
-  else
-    vim.cmd('copen')
-  end
 end
-map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
-map("n", "<A-q>", ":q<CR>", { desc = "Close the current window" })
--- map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
 
--- Terminal Mode
---map('t', '<C-e>', '<C-\\><C-n>:b# <CR>', { desc = "Exit terminal mode and switch buffer" })
-map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
-map('n', '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
-map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
-map('n', '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
+local function copy_path_to_clip()
+    local current_file = vim.api.nvim_buf_get_name(0)
+    if vim.fn.empty(current_file) == 1 then
+        vim.notify("No file in current buffer", vim.log.levels.WARN, { title = "Copy Relative Dir Path" })
+        return
+    end
 
--- ## ------------------------------ ##
--- ## AI
--- ## ------------------------------ ##
--- Avante
--- map({ "n", "v" }, "<leader>aa", ":AvanteAsk <CR>", { desc = "open dir tree" })
-map("n", "<leader>al", ":AvanteClear<CR>", { desc = "Avante: Clear the chat box content" })
-map("n", "<A-a>", ":AvanteToggle<CR>", { desc = "Avante: Toggle sidebar" })
-map("i", "<A-a>", "<Esc>:AvanteToggle <CR>", { desc = "Avante: Toggle sidebar" })
-map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual", true)<CR>', { desc = 'Codeium Manual Mode On' })
+    local current_dir = vim.fn.fnamemodify(current_file, ":h")
+    local absolute_filepath = vim.fn.fnamemodify(current_file, ":p") -- ":p" gets the absolute path
 
--- ## ------------------------------ ##
--- ## UI
--- ## ------------------------------ ##
---
--- directory tree, nvim-tree
-map("n", "<leader>f", ":NvimTreeToggle<CR>", { desc = "open dir tree" })
-map("n", "<leader>F", ":NvimTreeFindFile<CR>", { desc = "open dir tree for file" })
--- Noice
-map("n", "<leader>nl", ":Noice last<CR>", { desc = "Noice: Last message" })
-map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message history" })
--- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })
+    vim.cmd('let @+ = expand("' .. absolute_filepath .. '")')
+    vim.notify("Absolute file path copied to clipboard:\n" .. absolute_filepath, vim.log.levels.INFO, { title = "Copy Absolute File Path" })
+end
 
--- ## ------------------------------ ##
--- ## Search
--- ## ------------------------------ ##
--- Telescope, find files/global grep
-map("n", "sc", ":Telescope ", { desc = "Type :Telescope command" })
-map("n", "sf", ":Telescope find_files<CR>", { desc = "Search for files in PWD" })
-map("n", "sg", ":Telescope live_grep<CR>", { desc = "Searches for the string in your PWD" })
-map("n", "sgd", function()
+local function search_string_in_directory()
     local current_file = vim.api.nvim_buf_get_name(0)
     local search_dir
 
@@ -180,7 +122,93 @@ map("n", "sgd", function()
         -- Optionally, you could fall back to PWD grep here if desired:
         -- require('telescope.builtin').live_grep()
     end
-end, { desc = "Grep in directory (prompt)" })
+end
+-- ## -------------------------------------- ##
+-- ## F1 ~~ F12 Hotkeys
+-- ## -------------------------------------- ##
+map("n", "<F1>", ":Dashboard<CR>", { desc = "Dashboard" })
+map("n", "<F2>", ":Telescope projects<CR>", { desc = "Telescope projects" })
+-- Enhanced F3 keybinding for different modes
+-- map('n', '<F3>', ":1,$s/\<<C-R><C-W>\>//g", { desc = "Replace all" })
+map({'n','x'}, '<F3>', replace_text_in_cursor, { desc = "Replace current cursor text" })
+map("n", "<F9>", ":Cscope find s ", { desc = "Gtags: find references" })
+
+-- ## ------------------------------ ##
+-- ## Windows Hotkeys
+-- ## Moving/Switch/Paging/Zooming/Split
+-- ## ------------------------------ ##
+-- map("n", "sv", ":vsp<CR>", { desc = "" })
+-- map("n", "sh", ":sp<CR>", { desc = "" })
+map("n", "<C-h>", "<C-w>h", {desc = "Jump to left windown"})
+map("n", "<C-j>", "<C-w>j", {desc = "Jump to down windown"})
+map("n", "<C-k>", "<C-w>k", {desc = "Jump to up windown"})
+map("n", "<C-l>", "<C-w>l", {desc = "Jump to right windown"})
+map("n", "<C-Left>", ":vertical resize -15<CR>", { desc = "Reduce vertical windown size" })
+map("n", "<C-Right>", ":vertical resize +15<CR>", { desc = "Enlarge vertical windown size" })
+map("n", "<C-Down>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
+map("n", "<C-Up>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
+map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
+map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
+-- 等比例 <C-w> =
+-- 关当前窗口 <C-w>c
+map("v", "<", "<gv", { desc = "Visual indent" })
+map("v", ">", ">gv", { desc = "Visual indent" })
+map("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move selected text down" })
+map("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move selected text up" })
+-- Bufferline
+map("n", "<A-h>", ":BufferLineCyclePrev<CR>", { desc = "Switch to previous buffer"})
+map("n", "<A-l>", ":BufferLineCycleNext<CR>", { desc = "Switch to next buffer"})
+map("n", "<A-n>", ":BufferLineMoveNext<CR>", { desc = "Move current buffer to next location"})
+map("n", "<A-p>", ":BufferLineMovePrev<CR>", { desc = "Move current buffer to previous location"})
+map("n", "<A-w>", ":bdelete!<CR>", { desc = "BufferLineCloseCurrent"})
+map('n', '<A-T>', '<Cmd>BufferLineGroupToggle Term<CR>', {noremap = true, silent = true})
+map('n', '<A-1>', '<Cmd>BufferLineGoToBuffer 1<CR>', {noremap = true, silent = true})
+map({"t", "n"}, "<A-e>", "<C-\\><C-n>:b# <CR>", { desc = "switch current buffer" })
+map('n', '<A-1>', '<Cmd>BufferLineGoToBuffer 1<CR>', {noremap = true, silent = true})
+map('n', '<A-2>', '<Cmd>BufferLineGoToBuffer 2<CR>', {noremap = true, silent = true})
+map('n', '<A-3>', '<Cmd>BufferLineGoToBuffer 3<CR>', {noremap = true, silent = true})
+map('n', '<A-4>', '<Cmd>BufferLineGoToBuffer 4<CR>', {noremap = true, silent = true})
+map('n', '<A-5>', '<Cmd>BufferLineGoToBuffer 5<CR>', {noremap = true, silent = true})
+map('n', '<A-6>', '<Cmd>BufferLineGoToBuffer 6<CR>', {noremap = true, silent = true})
+map('n', '<A-7>', '<Cmd>BufferLineGoToBuffer 7<CR>', {noremap = true, silent = true})
+map('n', '<A-8>', '<Cmd>BufferLineGoToBuffer 8<CR>', {noremap = true, silent = true})
+map('n', '<A-9>', '<Cmd>BufferLineGoToBuffer 9<CR>', {noremap = true, silent = true})
+-- Terminal
+map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
+map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
+map('n', '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
+map('n', '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
+
+-- ## ------------------------------ ##
+-- ## AI
+-- ## ------------------------------ ##
+-- Avante
+-- map({ "n", "v" }, "<leader>aa", ":AvanteAsk <CR>", { desc = "open dir tree" })
+map("n", "<leader>al", ":AvanteClear<CR>", { desc = "Avante: Clear the chat box content" })
+map("n", "<A-a>", ":AvanteToggle<CR>", { desc = "Avante: Toggle sidebar" })
+map("i", "<A-a>", "<Esc>:AvanteToggle <CR>", { desc = "Avante: Toggle sidebar" })
+map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual", true)<CR>', { desc = 'Codeium Manual Mode On' })
+
+-- ## ------------------------------ ##
+-- ## UI
+-- ## ------------------------------ ##
+--
+-- directory tree, nvim-tree
+map("n", "<leader>f", ":NvimTreeToggle<CR>", { desc = "open dir tree" })
+map("n", "<leader>F", ":NvimTreeFindFile<CR>", { desc = "open dir tree for file" })
+-- Noice
+map("n", "<leader>nl", ":Noice last<CR>", { desc = "Noice: Last message" })
+map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message history" })
+-- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })
+
+-- ## ------------------------------ ##
+-- ## Search
+-- ## ------------------------------ ##
+-- Telescope, find files/global grep
+map("n", "sc", ":Telescope ", { desc = "Type :Telescope command" })
+map("n", "sf", ":Telescope find_files<CR>", { desc = "Search for files in PWD" })
+map("n", "sg", ":Telescope live_grep<CR>", { desc = "Searches for the string in your PWD" })
+map("n", "sgd", search_string_in_directory, { desc = "Grep in directory (prompt)" })
 map("n", "sgg", ":Telescope grep_string<CR>", { desc = "Searches for the string under your cursor in your PWD" })
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Lists previously open files" })
@@ -247,19 +275,8 @@ map('x', 'sp', '"+p', { desc = "Paste from system clipboard" })
 map('n', '<C-a>', 'ggVG', { desc = "Select all the content of current buffer" })
 map('x', '<C-c>', '"+y', { desc = "Copy to  system clipboard" })
 map('i', '<C-v>', '"+p', { desc = "Paste from system clipboard" })
-vim.keymap.set('n', 'yp', function()
-    local current_file = vim.api.nvim_buf_get_name(0)
-    if vim.fn.empty(current_file) == 1 then
-        vim.notify("No file in current buffer", vim.log.levels.WARN, { title = "Copy Relative Dir Path" })
-        return
-    end
+vim.keymap.set('n', 'yp', copy_path_to_clip, { desc = "Copy Relative Directory Path to Clipboard" })
 
-    local current_dir = vim.fn.fnamemodify(current_file, ":h")
-    local absolute_filepath = vim.fn.fnamemodify(current_file, ":p") -- ":p" gets the absolute path
-
-    vim.cmd('let @+ = expand("' .. absolute_filepath .. '")')
-    vim.notify("Absolute file path copied to clipboard:\n" .. absolute_filepath, vim.log.levels.INFO, { title = "Copy Absolute File Path" })
-end, { desc = "Copy Relative Directory Path to Clipboard" })
 --
 -- insert 模式下，跳到行首行尾
 map('i', '<C-a>', '<Home>', { desc = "Insert mode, move to line header" })
@@ -268,8 +285,8 @@ map('i', '<C-d>', '<Delete>', { desc = "" })
 map('i', '<C-h>', '<BS>', { desc = "" })
 map('i', '<C-f>', '<Right>', { desc = "" })
 map('i', '<C-b>', '<Left>', { desc = "" })
-map('i', '<M-f>', '<S-Right>', { desc = "" })
-map('i', '<M-b>', '<S-Left>', { desc = "" })
+map('i', '<A-f>', '<S-Right>', { desc = "" })
+map('i', '<A-b>', '<S-Left>', { desc = "" })
 --
 -- mark and Highlight word
 map('n', '<leader>m', '<leader>s8<leader>k', { desc = "Mark word.", remap = true })
