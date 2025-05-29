@@ -82,9 +82,12 @@ map("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move selected text down" })
 map("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move selected text up" })
 map("n", "<C-e>", ":b# <CR>", { desc = "switch current buffer" })
 -- Bufferline
-map("n", "<S-h>", ":BufferLineCyclePrev<CR>", { desc = "BufferLineCyclePrev"})
-map("n", "<S-l>", ":BufferLineCycleNext<CR>", { desc = "BufferLineCycleNext"})
-map("n", "<S-w>", ":bdelete<CR>", { desc = "BufferLineCloseCurrent"})
+map("n", "<S-h>", ":BufferLineCyclePrev<CR>", { desc = "Switch to previous buffer"})
+map("n", "<S-l>", ":BufferLineCycleNext<CR>", { desc = "Switch to next buffer"})
+map("n", "<S-n>", ":BufferLineMoveNext<CR>", { desc = "Move current buffer to next location"})
+map("n", "<S-p>", ":BufferLineMovePrev<CR>", { desc = "Move current buffer to previous location"})
+map("n", "<S-w>", ":bdelete!<CR>", { desc = "BufferLineCloseCurrent"})
+map('n', '<S-t>', '<Cmd>BufferLineGroupToggle Term<CR>', {noremap = true, silent = true})
 -- Close window
 local function toggle_quickfix()
   local has_quickfix = false
@@ -101,14 +104,15 @@ local function toggle_quickfix()
   end
 end
 map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
-map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
+map("n", "<A-q>", ":q<CR>", { desc = "Close the current window" })
+-- map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
 
 -- Terminal Mode
 --map('t', '<C-e>', '<C-\\><C-n>:b# <CR>', { desc = "Exit terminal mode and switch buffer" })
 map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
-map('n', '<leader>vt', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
+map('n', '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
 map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
-map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to right windown from terminal windown"})
+map('n', '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
 
 -- ## ------------------------------ ##
 -- ## AI

@@ -79,7 +79,8 @@ lualine.setup {
             update_in_insert = false, -- Update diagnostics in insert mode.
             always_visible = false,   -- Show diagnostics even if there are none.
         }},
-        lualine_c = {'filename', configure_trouble_segment(),},
+        -- lualine_c = {'filename', configure_trouble_segment(),},
+        lualine_c = {{'filename', path = 1}},  -- Show full relative path
         lualine_x = {'encoding', 'fileformat', 'filetype'},
         lualine_y = {'progress',
             {
@@ -128,12 +129,154 @@ lualine.setup {
 -- ##################
 --
 vim.opt.termguicolors = true
+
+-- Define terminal buffers storage locally
+local terminal_bufs = {}
+local next_terminal_index = 1
+
 require("bufferline").setup({
     options = {
-        mode = "buffers",
-        tab_size = 5,
-        color_icons = true , -- whether or not to add the filetype icon highlights
-    }
+        mode = "buffers", -- set to "tabs" to only show tabpages instead
+        themable = true, -- allows highlight groups to be overriden i.e. sets highlights as default
+        numbers = "none", -- "ordinal"
+        close_command = "bdelete! %d",       -- can be a string | function, | false see "Mouse actions"
+        right_mouse_command = "bdelete! %d", -- can be a string | function | false, see "Mouse actions"
+        left_mouse_command = "buffer %d",    -- can be a string | function, | false see "Mouse actions"
+        middle_mouse_command = nil,          -- can be a string | function, | false see "Mouse actions"
+        indicator = {
+            icon = '▎', -- this should be omitted if indicator style is not 'icon'
+            style = 'icon',
+        },
+        buffer_close_icon = '󰅖',
+        modified_icon = '● ',
+        close_icon = ' ',
+        left_trunc_marker = ' ',
+        right_trunc_marker = ' ',
+        -- 自定义 name_formatter 函数
+        name_formatter = function(buf)
+            local ft = vim.bo[buf.bufnr].filetype
+            -- 处理终端缓冲区和空文件类型
+            if ft == "terminal" or ft == "toggleterm" or ft == "" then
+                if not terminal_bufs[buf.bufnr] then
+                    terminal_bufs[buf.bufnr] = next_terminal_index
+                    next_terminal_index = next_terminal_index + 1
+                end
+                return "term" .. terminal_bufs[buf.bufnr]
+            end
+            -- 其他类型缓冲区直接返回文件名
+            return buf.name
+        end,
+
+        max_name_length = 18,
+        max_prefix_length = 15, -- prefix used when a buffer is de-duplicated
+        truncate_names = true, -- whether or not tab names should be truncated
+        tab_size = 8,
+        diagnostics = false,
+        diagnostics_update_in_insert = false, -- only applies to coc
+        diagnostics_update_on_event = true, -- use nvim's diagnostic handler
+        --[[ offsets = {
+           [     {
+           [         filetype = "NvimTree",
+           [         text = "File Explorer" | function ,
+           [         text_align = "left" | "center" | "right"
+           [         separator = true
+           [     }
+           [ }, ]]
+        color_icons = true, -- whether or not to add the filetype icon highlights
+        show_buffer_icons = true, -- disable filetype icons for buffers
+        show_buffer_close_icons = true,
+        show_close_icon = true,
+        show_tab_indicators = true,
+        show_duplicate_prefix = true, -- whether to show duplicate buffer prefix
+        duplicates_across_groups = true, -- whether to consider duplicate paths in different groups as duplicates
+        persist_buffer_sort = true, -- whether or not custom sorted buffers should persist
+        move_wraps_at_ends = false, -- whether or not the move command "wraps" at the first or last position
+        -- can also be a table containing 2 custom separators
+        -- [focused and unfocused]. eg: { '|', '|' }
+        separator_style = "slant",
+        enforce_regular_tabs = false,
+        always_show_bufferline = true,
+        auto_toggle_bufferline = true,
+
+        -- Filename similarity sorting
+        sort_by = function(buffer_a, buffer_b)
+            -- 获取文件扩展名（小写）
+            local function get_extension(filename)
+                return filename:match("^.+(%..+)$") or ""
+            end
+
+            local ext_a = get_extension(buffer_a.name):lower()
+            local ext_b = get_extension(buffer_b.name):lower()
+
+            -- 首先按文件类型分组
+            if ext_a ~= ext_b then
+                return ext_a < ext_b
+            end
+
+            -- 如果是bash文件，按打开顺序排序（bufnr越小表示越早打开）
+            if ext_a == ".sh" then
+                return buffer_a.bufnr < buffer_b.bufnr
+            end
+
+            -- 其他文件类型按相似度排序
+            local function get_similarity_score(name1, name2)
+                -- 比较时不考虑扩展名
+                local base1 = name1:match("(.+)%..+$") or name1
+                local base2 = name2:match("(.+)%..+$") or name2
+
+                -- 计算最长公共前缀
+                local min_len = math.min(#base1, #base2)
+                local prefix_len = 0
+                for i = 1, min_len do
+                    if base1:sub(i, i) ~= base2:sub(i, i) then break end
+                    prefix_len = i
+                end
+
+                -- 加权分数: 60% 前缀相似度, 30% 长度差异, 10% 字典序
+                local prefix_score = prefix_len / min_len
+                local len_score = 1 - math.abs(#base1 - #base2) / math.max(#base1, #base2)
+                local lex_score = base1 < base2 and 1 or 0
+
+                return 0.6 * prefix_score + 0.3 * len_score + 0.1 * lex_score
+            end
+
+            local similarity = get_similarity_score(buffer_a.name, buffer_b.name)
+
+            -- 相似度阈值：低于此值视为不相似
+            if similarity < 0.4 then
+                -- 不相似时按文件名长度排序
+                return #buffer_a.name < #buffer_b.name
+            else
+                -- 相似时按文件名字典序排序
+                return buffer_a.name < buffer_b.name
+            end
+        end,
+        pick = {
+            alphabet = "abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMOPQRSTUVWXYZ1234567890",
+        },
+        groups = {
+            options = {
+                toggle_hidden_on_enter = true  -- 重新进入隐藏组时自动展开
+            },
+            items = {
+                {
+                    name = "Term",               -- 组名（必填）
+                    icon = "",                  -- 组图标（可选）
+                    priority = 2,                 -- 显示优先级（可选）
+                    highlight = {                 -- 高亮配置（可选）
+                        underline = true,
+                        sp = "blue"
+                    },
+                    matcher = function(buf)       -- 判断缓冲区是否属于本组（必填）
+                        return buf.name:match('^term%d+$')
+                    end,
+                    separator = {                 -- 分隔符样式（可选）
+                        style = require('bufferline.groups').separator.tab
+                    }
+                },
+            },
+        },
+    },
 })
 
 -- ##################

@@ -1,11 +1,8 @@
 local avanteOpts = {}
 
 avanteOpts.opts = {
-    -- @alias Provider "claude" | "openai" | "azure" | "gemini" | "cohere" | "copilot" | string
-    -- provider = "claude", -- Recommend using Claude
-    -- WARNING: Since auto-suggestions are a high-frequency operation and therefore expensive,
-    -- currently designating it as `copilot` provider is dangerous because: https://github.com/yetone/avante.nvim/issues/1048
-    -- Of course, you can reduce the request frequency by increasing `suggestion.debounce`.
+    -- @alias avante.Mode "agentic" | "legacy"
+    mode = "legacy",
     auto_suggestions_provider = "gemini_flash",
     -- claude = {
     --     endpoint = "https://api.anthropic.com",
@@ -17,7 +14,9 @@ avanteOpts.opts = {
     provider = "gemini",
     gemini = {
         endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
-        model = "gemini-2.5-pro-exp-03-25", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+        -- model = "gemini-2.5-pro-exp-03-25", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+        -- model = "gemini-2.0-flash-thinking-exp",
+        model = "gemini-2.5-flash-preview-05-20",
         temperature = 0.2, -- Controls the randomness of the output. 0 is more deterministic.
         max_tokens = 8192, -- The maximum number of tokens in the generated response.
         disable_tools = false,
@@ -78,6 +77,7 @@ avanteOpts.opts = {
         support_paste_from_clipboard = false,
         minimize_diff = true,
         enable_token_counting = true,
+        use_cwd_as_project_root = true,
         enable_cursor_planning_mode = false,
     },
     ---Specify the special dual_boost mode
@@ -208,7 +208,10 @@ avanteOpts.opts = {
         ignore_patterns = { "%.git", "%.worktree", "__pycache__", "node_modules" }, -- ignore files matching these
         negate_patterns = {}, -- negate ignore files matching these.
     },
-
+    selector = {
+        -- @alias avante.SelectorProvider "native" | "fzf_lua" | "mini_pick" | "snacks" | "telescope" | fun(selector: avante.ui.Selector): nil
+        provider = "telescope",
+    }
 }
 
 ---------------------------------------------

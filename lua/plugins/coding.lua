@@ -76,6 +76,7 @@ require('mini.align').setup({
 })
 require('mini.pairs').setup()
 require('mini.splitjoin').setup({
+    -- 如果你将光标放在 `{1, 2, 3, 4, 5}` 这一行，然后按下 `<leader>S`，`mini.splitjoin` 可能会将其转换为：
     mappings = {
         toggle = '<leader>S',  -- 切换（Toggle）的快捷键
         split = '',     -- 拆分（Split）的快捷键，默认为禁用
@@ -91,16 +92,16 @@ require('mini.splitjoin').setup({
 require('mini.surround').setup({
     custom_surroundings = nil,
     highlight_duration = 500,
-    mappings = {
-        add = '<leader>ra',
-        delete = '<leader>rd',
-        find = '<leader>rf',
-        replace = '<leader>rr',
-        find_left = '<leader>rF',
-        highlight = '<leader>rh',
+    mappings           = {
+        add            = '<leader>ra',
+        delete         = '<leader>rd',
+        find           = '<leader>rf',
+        replace        = '<leader>rr',
+        find_left      = '<leader>rF',
+        highlight      = '<leader>rh',
         update_n_lines = '<leader>rn',
-        suffix_last = 'l',
-        suffix_next = 'n',
+        suffix_last    = 'l',
+        suffix_next    = 'n',
     },
     n_lines = 20,
     respect_selection_type = false,
