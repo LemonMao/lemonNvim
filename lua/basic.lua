@@ -53,7 +53,7 @@ vim.o.whichwrap = '<,>,[,]'
 vim.o.hidden = true
 -- 鼠标支持
 vim.o.mouse = "a"
-vim.o.mousescroll = "ver:12,hor:10"
+vim.o.mousescroll = "ver:30,hor:10"
 -- 禁止创建备份文件
 vim.o.backup = false
 vim.o.writebackup = false

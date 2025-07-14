@@ -12,16 +12,20 @@ avanteOpts.opts = {
     -- },
     -- provider = "deepseek",
     provider = "gemini",
-    gemini = {
-        endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
-        -- model = "gemini-2.5-pro-exp-03-25", -- The Gemini model to use (e.g., "gemini-2.0-flash").
-        -- model = "gemini-2.0-flash-thinking-exp",
-        model = "gemini-2.5-flash-preview-05-20",
-        temperature = 0.2, -- Controls the randomness of the output. 0 is more deterministic.
-        max_tokens = 8192, -- The maximum number of tokens in the generated response.
-        disable_tools = false,
-    },
-    vendors = {
+    providers = {
+        gemini = {
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
+            -- model = "gemini-2.5-pro-exp-03-25", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+            -- model = "gemini-2.0-flash-thinking-exp",
+            model = "gemini-2.5-flash-preview-05-20",
+            disable_tools = false,
+            extra_request_body = {
+                max_tokens = 131072, -- The maximum number of tokens in the generated response.
+                generationConfig = {
+                    temperature = 0.25,
+                },
+            },
+        },
         deepseek_r = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
@@ -29,28 +33,38 @@ avanteOpts.opts = {
             -- model = "deepseek-chat",
             model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
-            temperature = 0.2, -- adjust if needed
-            max_tokens = 8192,
             disable_tools = true,
+            extra_request_body = {
+                temperature = 0.25,
+                max_tokens = 131072, -- The maximum number of tokens in the generated response.
+                max_completion_tokens = 131072, -- Increase this to include reasoning tokens (for reasoning models)
+                reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
+            },
         },
-        deepseek_v = {
-            __inherited_from = "openai",
-            api_key_name = "DEEPSEEK_API_KEY",
-            endpoint = "https://api.deepseek.com",
-            model = "deepseek-chat",
-            -- model = "deepseek-reasoner",
-            timeout = 30000, -- timeout in milliseconds
-            temperature = 0.2, -- adjust if needed
-            max_tokens = 8192,
-            disable_tools = false,
-        },
+        --[[
+           [deepseek_v = {
+           [    __inherited_from = "openai",
+           [    api_key_name = "DEEPSEEK_API_KEY",
+           [    endpoint = "https://api.deepseek.com",
+           [    model = "deepseek-chat",
+           [    -- model = "deepseek-reasoner",
+           [    timeout = 30000, -- timeout in milliseconds
+           [    temperature = 0.2, -- adjust if needed
+           [    max_tokens = 8192,
+           [    disable_tools = false,
+           [},
+           ]]
         gemini_flash = {
             __inherited_from = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
             model = "gemini-2.0-flash",
-            temperature = 0.2,
-            max_tokens = 8192,
             disable_tools = false,
+            extra_request_body = {
+                max_tokens = 16384, -- The maximum number of tokens in the generated response.
+                generationConfig = {
+                    temperature = 0.25,
+                },
+            },
         },
     },
     web_search_engine = {

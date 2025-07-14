@@ -78,12 +78,14 @@ mason.setup({
     "clang-format",
   },
 })
-mason_lspconfig.setup({
-  -- A list of servers to automatically install if they're not already installed.
-  -- This setting has no relation with the `automatic_installation` setting.
-  ensure_installed = { "lua_ls", "clangd", "pylsp"},
-  automatic_installation = true,
-})
+--[[ In one version, this configure has errors
+   [mason_lspconfig.setup({
+   [  -- A list of servers to automatically install if they're not already installed.
+   [  -- This setting has no relation with the `automatic_installation` setting.
+   [  ensure_installed = { "lua_ls", "clangd", "pylsp"},
+   [  automatic_installation = true,
+   [})
+   ]]
 
 
 nvim_lsp.lua_ls.setup({

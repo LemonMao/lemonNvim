@@ -89,11 +89,11 @@ autocmd FileType qf nnoremap <silent><buffer> p :PreviewQuickfix<cr>
 autocmd FileType qf nnoremap <silent><buffer> P :PreviewClose<cr>
 nmap <m-t> :PreviewTag <cr>
 nmap <m-s> :PreviewSignature <cr>
-nmap <m-c> :PreviewClose <cr>
+" nmap <m-c> :PreviewClose <cr>
 " close quickfix window
 
 " ########
-" vim-preview
+" NERD comment
 " ########
 " Create default mappings
 let g:NERDCreateDefaultMappings = 1

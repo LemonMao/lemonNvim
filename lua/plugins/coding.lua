@@ -181,6 +181,76 @@ require('blame').setup (
 )
 require('diffview').setup()
 
+-- Define custom branches for URL generation
+local custom_branches = {
+    "BR_MAIN", -- 您可以在这里添加其他自定义分支名称
+}
+
+-- Create a user command to call this function
+local function get_github_file_url()
+    local current_file = vim.fn.expand('%:p')
+
+    -- 1. Check if it's a readable file
+    if vim.fn.filereadable(current_file) == 0 then
+        vim.notify("当前缓冲区不是一个可读文件。", vim.log.levels.WARN)
+        return nil
+    end
+
+    -- 2. Get Git repository root
+    local git_root_cmd = 'git rev-parse --show-toplevel'
+    local git_root = vim.fn.system(git_root_cmd)
+    if vim.v.shell_error ~= 0 then
+        vim.notify("当前文件不在Git仓库中。", vim.log.levels.WARN)
+        return nil
+    end
+    git_root = git_root:gsub('\n', '')
+
+    -- 3. Get Git remote URL
+    local remote_url_cmd = 'git config --get remote.origin.url'
+    local remote_url = vim.fn.system(remote_url_cmd)
+    if vim.v.shell_error ~= 0 or remote_url:match('^%s*$') then
+        vim.notify("无法获取Git远程仓库URL (remote.origin.url)。", vim.log.levels.WARN)
+        return nil
+    end
+    remote_url = remote_url:gsub('\n', '')
+
+    -- Normalize remote URL to HTTPS GitHub format
+    remote_url = remote_url:gsub('^git@github.com:', 'https://github.com/'):gsub('%.git$', '')
+
+    -- 4. Get current branch name
+    local branch_cmd = 'git rev-parse --abbrev-ref HEAD'
+    local branch = vim.fn.system(branch_cmd)
+    if vim.v.shell_error ~= 0 or branch:match('^%s*$') then
+        vim.notify("无法获取当前Git分支名称。", vim.log.levels.WARN)
+        return nil
+    end
+    branch = branch:gsub('\n', '')
+
+    -- 5. Calculate relative path
+    local git_root_with_slash = git_root
+    if not git_root_with_slash:match('/$') then
+        git_root_with_slash = git_root_with_slash .. '/'
+    end
+    local relative_path = current_file:gsub(git_root_with_slash, '')
+
+    -- 6. Construct GitHub URL for current branch
+    local github_url_current_branch = remote_url .. '/blob/' .. branch .. '/' .. relative_path
+
+    vim.notify("GitHub URL (Current branch: " .. branch .. "): " .. github_url_current_branch, vim.log.levels.INFO, { title = "Git URL" })
+    vim.fn.setreg('+', github_url_current_branch) -- Copy current branch URL to system clipboard
+    -- vim.notify("当前分支的GitHub URL 已复制到剪贴板。", vim.log.levels.INFO)
+
+    -- 7. Construct GitHub URLs for custom branches
+    for _, custom_branch_name in ipairs(custom_branches) do
+        local github_url_custom_branch = remote_url .. '/blob/' .. custom_branch_name .. '/' .. relative_path
+        vim.notify("GitHub URL (Other branch: " .. custom_branch_name .. "): " .. github_url_custom_branch, vim.log.levels.INFO, { title = "Git URL" })
+    end
+
+    return github_url_current_branch -- Still return the current branch URL as the primary one
+end
+vim.api.nvim_create_user_command('GetGithubFileUrl', get_github_file_url, { desc = "获取当前文件在GitHub上的URL并复制到剪贴板" })
+
+
 -- ## ------------------------------ ##
 -- ## project
 -- ## ------------------------------ ##

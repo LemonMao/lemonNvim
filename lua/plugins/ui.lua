@@ -35,6 +35,74 @@ local function transfer_upload_status()
   end
 end
 
+-- Custom function to format filename for lualine
+local function custom_filename_formatter()
+    local full_path = vim.fn.bufname()
+    local relative_path = vim.fn.fnamemodify(full_path, ":.")
+    local limitation = 60 -- Threshold to trigger shortening
+    local ellipsis = "..."
+    local ellipsis_len = #ellipsis
+    local separator_len = 1 -- for '/'
+
+    if #relative_path <= limitation then
+        return relative_path
+    end
+
+    local parts = {}
+    for part in string.gmatch(relative_path, "[^/]+") do
+        table.insert(parts, part)
+    end
+
+    local num_parts = #parts
+
+    -- Handle the case where the filename itself is longer than the limitation
+    local filename = parts[num_parts]
+    if #filename > limitation then
+        local start_len = math.floor((limitation - ellipsis_len) / 2)
+        local end_len = limitation - ellipsis_len - start_len
+        if start_len < 0 then
+            return filename:sub(1, limitation)
+        end
+        return filename:sub(1, start_len) .. ellipsis .. filename:sub(#filename - end_len + 1, #filename)
+    end
+
+    local current_result_string = ""
+    -- Iterate from the last part (filename) backwards
+    for i = num_parts, 1, -1 do
+        local part = parts[i]
+        local temp_string_with_part = part
+        if current_result_string ~= "" then
+            temp_string_with_part = part .. "/" .. current_result_string
+        end
+
+        local potential_final_string = temp_string_with_part
+        -- If there are more parts to the left, we might need an ellipsis
+        if i > 1 then
+            potential_final_string = ellipsis .. "/" .. temp_string_with_part
+        end
+
+        if #potential_final_string <= limitation then
+            current_result_string = temp_string_with_part
+        else
+            -- This part (or the ellipsis) makes it too long.
+            -- If we are not at the very first part of the original path, add ellipsis and break.
+            if i > 1 then
+                return ellipsis .. "/" .. current_result_string
+            else
+                -- This case should ideally not be reached if the filename itself is handled
+                -- and the initial `if #relative_path <= limitation` check passes.
+                -- It means the full path from `parts[1]` to `parts[num_parts]` is too long,
+                -- and `parts[1]` is the only remaining part to consider.
+                -- In this scenario, `current_result_string` already holds the longest possible
+                -- suffix that fits within the limitation.
+                return current_result_string
+            end
+        end
+    end
+
+    return current_result_string
+end
+
 lualine.setup {
     options = {
         icons_enabled = true,
@@ -80,7 +148,26 @@ lualine.setup {
             always_visible = false,   -- Show diagnostics even if there are none.
         }},
         -- lualine_c = {'filename', configure_trouble_segment(),},
-        lualine_c = {{'filename', path = 1}},  -- Show full relative path
+        -- lualine_c = {custom_filename_formatter},
+        lualine_c = {
+            {
+                'filename',
+                file_status = true,      -- Displays file status (readonly status, modified status)
+                newfile_status = false,  -- Display new file status (new file means no write after created)
+                path = 1,                -- 0: Just the filename
+                -- 1: Relative path
+                -- 2: Absolute path
+                -- 3: Absolute path, with tilde as the home directory
+                -- 4: Filename and parent dir, with tilde as the home directory
+                shorting_target = 40,    -- Shortens path to leave 40 spaces in the window for other components.
+                symbols = {
+                    modified = '[+]',      -- Text to show when the file is modified.
+                    readonly = '[-]',      -- Text to show when the file is non-modifiable or readonly.
+                    unnamed = '[No Name]', -- Text to show for unnamed buffers.
+                    newfile = '[New]',     -- Text to show for newly created file before first write
+                }
+            }
+        },
         lualine_x = {'encoding', 'fileformat', 'filetype'},
         lualine_y = {'progress',
             {
@@ -138,7 +225,7 @@ require("bufferline").setup({
     options = {
         mode = "buffers", -- set to "tabs" to only show tabpages instead
         themable = true, -- allows highlight groups to be overriden i.e. sets highlights as default
-        numbers = "ordinal", -- "ordinal", "none"
+        numbers = "none", -- "ordinal", "none"
         close_command = "bdelete! %d",       -- can be a string | function, | false see "Mouse actions"
         right_mouse_command = "bdelete! %d", -- can be a string | function | false, see "Mouse actions"
         left_mouse_command = "buffer %d",    -- can be a string | function, | false see "Mouse actions"
@@ -154,9 +241,8 @@ require("bufferline").setup({
         right_trunc_marker = ' ',
         -- 自定义 name_formatter 函数
         name_formatter = function(buf)
-            local ft = vim.bo[buf.bufnr].filetype
             -- 处理终端缓冲区和空文件类型
-            if ft == "terminal" or ft == "toggleterm" or ft == "" then
+            if buf.name:match('term') or buf.name:match('bash') then
                 if not terminal_bufs[buf.bufnr] then
                     terminal_bufs[buf.bufnr] = next_terminal_index
                     next_terminal_index = next_terminal_index + 1
@@ -200,31 +286,35 @@ require("bufferline").setup({
 
         -- Filename similarity sorting
         sort_by = function(buffer_a, buffer_b)
-            -- 获取文件扩展名（小写）
-            local function get_extension(filename)
-                return filename:match("^.+(%..+)$") or ""
+            -- Get the filetype of the buffers
+            local filetype_a = vim.api.nvim_get_option_value('filetype', { buf = buffer_a.bufnr })
+            local filetype_b = vim.api.nvim_get_option_value('filetype', { buf = buffer_b.bufnr })
+
+            -- vim.notify_once("Get filetype: ")
+            -- vim.notify_once("Get filetype: " .. filetype_a .. ":" .. filetype_b, vim.log.levels.INFO, { title = "Sort by type" })
+            -- Normalize filetypes: treat 'c' and 'cpp' as the same
+            local function normalize_filetype(ft)
+                if ft == 'c' or ft == 'cpp' then
+                    return 'c_cpp'
+                end
+                return ft
             end
 
-            local ext_a = get_extension(buffer_a.name):lower()
-            local ext_b = get_extension(buffer_b.name):lower()
+            local normalized_ft_a = normalize_filetype(filetype_a)
+            local normalized_ft_b = normalize_filetype(filetype_b)
 
-            -- 首先按文件类型分组
-            if ext_a ~= ext_b then
-                return ext_a < ext_b
+            -- First, group by filetype
+            if normalized_ft_a ~= normalized_ft_b then
+                return normalized_ft_a < normalized_ft_b
             end
 
-            -- 如果是bash文件，按打开顺序排序（bufnr越小表示越早打开）
-            if ext_a == ".sh" then
-                return buffer_a.bufnr < buffer_b.bufnr
-            end
-
-            -- 其他文件类型按相似度排序
+            -- If filetypes are the same, sort by similarity
             local function get_similarity_score(name1, name2)
-                -- 比较时不考虑扩展名
+                -- Compare without considering extension (as filetype handles it)
                 local base1 = name1:match("(.+)%..+$") or name1
                 local base2 = name2:match("(.+)%..+$") or name2
 
-                -- 计算最长公共前缀
+                -- Calculate longest common prefix
                 local min_len = math.min(#base1, #base2)
                 local prefix_len = 0
                 for i = 1, min_len do
@@ -232,7 +322,7 @@ require("bufferline").setup({
                     prefix_len = i
                 end
 
-                -- 加权分数: 60% 前缀相似度, 30% 长度差异, 10% 字典序
+                -- Weighted score: 60% prefix similarity, 30% length difference, 10% lexicographical order
                 local prefix_score = prefix_len / min_len
                 local len_score = 1 - math.abs(#base1 - #base2) / math.max(#base1, #base2)
                 local lex_score = base1 < base2 and 1 or 0
@@ -242,12 +332,12 @@ require("bufferline").setup({
 
             local similarity = get_similarity_score(buffer_a.name, buffer_b.name)
 
-            -- 相似度阈值：低于此值视为不相似
+            -- Similarity threshold: considered dissimilar if below this value
             if similarity < 0.4 then
-                -- 不相似时按文件名长度排序
+                -- If dissimilar, sort by filename length
                 return #buffer_a.name < #buffer_b.name
             else
-                -- 相似时按文件名字典序排序
+                -- If similar, sort by filename lexicographically
                 return buffer_a.name < buffer_b.name
             end
         end,
@@ -498,7 +588,7 @@ nvim_tree.setup({
     },
     view = {
         -- 宽度
-        width = 40,
+        width = 80,
         -- 也可以 'right'
         side = 'right',
         -- 不显示行数

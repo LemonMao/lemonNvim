@@ -123,6 +123,25 @@ local function search_string_in_directory()
         -- require('telescope.builtin').live_grep()
     end
 end
+
+local function close_empty_and_current_buffers()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == "" and buf ~= vim.api.nvim_get_current_buf() then
+            vim.api.nvim_buf_delete(buf, {force = true})
+        end
+    end
+    vim.cmd("bdelete!")
+end
+
+local function close_preview_window()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == "" and buf ~= vim.api.nvim_get_current_buf() then
+            vim.api.nvim_buf_delete(buf, {force = true})
+        end
+    end
+    vim.cmd("PreviewClose")
+end
+
 -- ## -------------------------------------- ##
 -- ## F1 ~~ F12 Hotkeys
 -- ## -------------------------------------- ##
@@ -143,12 +162,13 @@ map("n", "<C-h>", "<C-w>h", {desc = "Jump to left windown"})
 map("n", "<C-j>", "<C-w>j", {desc = "Jump to down windown"})
 map("n", "<C-k>", "<C-w>k", {desc = "Jump to up windown"})
 map("n", "<C-l>", "<C-w>l", {desc = "Jump to right windown"})
-map("n", "<C-Left>", ":vertical resize -15<CR>", { desc = "Reduce vertical windown size" })
-map("n", "<C-Right>", ":vertical resize +15<CR>", { desc = "Enlarge vertical windown size" })
+map("n", "<C-Left>", ":vertical resize -19<CR>", { desc = "Reduce vertical windown size" })
+map("n", "<C-Right>", ":vertical resize +19<CR>", { desc = "Enlarge vertical windown size" })
 map("n", "<C-Down>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
 map("n", "<C-Up>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
 map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
 map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
+map({'n', 't', 'v'}, "<A-c>", close_preview_window, { desc = "Bufferline: Close empty buffers"})
 -- 等比例 <C-w> =
 -- 关当前窗口 <C-w>c
 map("v", "<", "<gv", { desc = "Visual indent" })
@@ -156,26 +176,28 @@ map("v", ">", ">gv", { desc = "Visual indent" })
 map("v", "J", ":move '>+1<CR>gv-gv", { desc = "Move selected text down" })
 map("v", "K", ":move '<-2<CR>gv-gv", { desc = "Move selected text up" })
 -- Bufferline
-map("n", "<A-h>", ":BufferLineCyclePrev<CR>", { desc = "Switch to previous buffer"})
-map("n", "<A-l>", ":BufferLineCycleNext<CR>", { desc = "Switch to next buffer"})
-map("n", "<A-n>", ":BufferLineMoveNext<CR>", { desc = "Move current buffer to next location"})
-map("n", "<A-p>", ":BufferLineMovePrev<CR>", { desc = "Move current buffer to previous location"})
-map("n", "<A-w>", ":bdelete!<CR>", { desc = "BufferLineCloseCurrent"})
-map('n', '<A-T>', '<Cmd>BufferLineGroupToggle Term<CR>', {noremap = true, silent = true})
-map('n', '<A-1>', '<Cmd>BufferLineGoToBuffer 1<CR>', {noremap = true, silent = true})
-map({"t", "n"}, "<A-e>", "<C-\\><C-n>:b# <CR>", { desc = "switch current buffer" })
-map('n', '<A-1>', '<Cmd>BufferLineGoToBuffer 1<CR>', {noremap = true, silent = true})
-map('n', '<A-2>', '<Cmd>BufferLineGoToBuffer 2<CR>', {noremap = true, silent = true})
-map('n', '<A-3>', '<Cmd>BufferLineGoToBuffer 3<CR>', {noremap = true, silent = true})
-map('n', '<A-4>', '<Cmd>BufferLineGoToBuffer 4<CR>', {noremap = true, silent = true})
-map('n', '<A-5>', '<Cmd>BufferLineGoToBuffer 5<CR>', {noremap = true, silent = true})
-map('n', '<A-6>', '<Cmd>BufferLineGoToBuffer 6<CR>', {noremap = true, silent = true})
-map('n', '<A-7>', '<Cmd>BufferLineGoToBuffer 7<CR>', {noremap = true, silent = true})
-map('n', '<A-8>', '<Cmd>BufferLineGoToBuffer 8<CR>', {noremap = true, silent = true})
-map('n', '<A-9>', '<Cmd>BufferLineGoToBuffer 9<CR>', {noremap = true, silent = true})
+map("n", "<A-h>", ":BufferLineCyclePrev<CR>", { desc = "Bufferline: Switch to previous buffer"})
+map("t", "<A-h>", "<C-\\><C-n>:BufferLineCyclePrev<CR>", { desc = "Bufferline: Switch to previous buffer"})
+map("n", "<A-l>", ":BufferLineCycleNext<CR>", { desc = "Bufferline: Switch to next buffer"})
+map("t", "<A-l>", "<C-\\><C-n>:BufferLineCycleNext<CR>", { desc = "Bufferline: Switch to next buffer"})
+map({'n', 't', 'v'}, "<A-n>", "<C-\\><C-n>:BufferLineMoveNext<CR>", { desc = "Bufferline: Move current buffer to next location"})
+map({'n', 't', 'v'}, "<A-p>", "<C-\\><C-n>:BufferLineMovePrev<CR>", { desc = "Bufferline: Move current buffer to previous location"})
+map({'n', 't', 'v'}, "<A-w>", close_empty_and_current_buffers, { desc = "Bufferline: Close empty buffers"})
+map({'n', 't', 'v'}, '<A-T>', '<C-\\><C-n><Cmd>BufferLineGroupToggle Term<CR>', { desc = "Bufferline: Toggle group"})
+map({'n', 't', 'v'}, "<A-e>", "<C-\\><C-n>:b# <CR>", { desc = "Bufferline: Switch to recent buffer" })
+map({'n', 't', 'v'}, '<A-1>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 1<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-2>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 2<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-3>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 3<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-4>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 4<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-5>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 5<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-6>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 6<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-7>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 7<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-8>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 8<CR>', { desc = "Bufferline: Switch to buffer with number"})
+map({'n', 't', 'v'}, '<A-9>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 9<CR>', { desc = "Bufferline: Switch to buffer with number"})
 -- Terminal
 map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
 map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
+-- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})
 map('n', '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
 map('n', '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
 
@@ -323,20 +345,21 @@ map({ "n", "v" }, "<leader>sd", "<cmd>Cs find d<cr>", { desc = "Find functions t
 map({ "n", "v" }, "<leader>sa", "<cmd>Cs find a<cr>", { desc = "Find places where this symbol is assigned a value" })
 --
 -- Diagnos Trouble
-map("n", "<leader>de", ":lua toggle_diagnostics()<CR>", { desc = "Toggle diagnostics in file" })
-map("n", "<leader>dx", ":Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Trouble: toggle diagnostics on current buffer" })  -- Buffer Diagnostics (Trouble)
-map("n", "<leader>dX", ":Trouble diagnostics toggle<CR>", { desc = "Trouble: toggle diagnostics on project" })               -- Diagnostics (Trouble)
-map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "Trouble: Open LSP symbols" })       -- Symbols (Trouble)
-map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "Trouble: Open LSP def/ref/..." })  -- LSP Definitions / references / ... (Trouble)
-map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "Trouble: Open Trouble local list" })                   -- Location List (Trouble)
-map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "Trouble: Open Trouble Quickfix" })                    -- Quickfix List (Trouble)
+map("n", "<leader>de", ":lua toggle_diagnostics()<CR>", { desc = "Diag: Toggle diagnostics in file" })
+map("n", "<leader>dx", ":Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Diag: Toggle diagnostics on current buffer" })  -- Buffer Diagnostics (Trouble)
+map("n", "<leader>dX", ":Trouble diagnostics toggle<CR>", { desc = "Diag: toggle diagnostics on project" })               -- Diagnostics (Trouble)
+map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "Diag: Open LSP symbols" })       -- Symbols (Trouble)
+map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "Diag: Open LSP def/ref/..." })  -- LSP Definitions / references / ... (Trouble)
+map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "Diag: Open Trouble local list" })                   -- Location List (Trouble)
+map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "Diag: Open Trouble Quickfix" })                    -- Quickfix List (Trouble)
 --
 -- git
 map('n', '<leader>gb', ':BlameToggle<CR>', { desc = "Git: Diplay Blame history" })
+map('n', '<leader>gn', ':GetGithubFileUrl<CR>', { desc = "Git: Diplay current file URL" })
 --
 -- format - conform
-map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { desc = "Format code" })
-map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code" })
+map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { desc = "Format code for whole file" })
+map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code for block" })
 --
 -- transfer upload toggle
 map('n', '<leader>tt', ':TransferToggle<CR>', { desc = "Transfer: upload toggle" })
