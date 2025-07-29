@@ -86,5 +86,3 @@ vim.o.showtabline = 2
 vim.o.showmode = false
 --  avante needs
 vim.o.laststatus = 3
-
-vim.diagnostic.disable()

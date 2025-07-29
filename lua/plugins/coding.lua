@@ -19,14 +19,14 @@ end
 
 -- Disable diagnostics globally by default
 -- vim.diagnostic.enable()
-vim.diagnostic.disable()
+vim.diagnostic.enable(false)
 
 -- func toggle_diagnostics for keybinds
 function toggle_diagnostics()
     if vim.diagnostic.is_enabled() then
-        vim.diagnostic.disable()
+        vim.diagnostic.enable(false)
     else
-        vim.diagnostic.enable()
+        vim.diagnostic.enable(true)
     end
 end
 
