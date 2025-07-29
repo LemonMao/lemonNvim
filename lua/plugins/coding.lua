@@ -69,7 +69,7 @@ require('mini.align').setup({
     -- t：去除部分的空白字符。
     -- <BS>：删除上一步操作。
     mappings = {
-        start = '<leader>l', -- `,a=` align by `=`
+        start = '<leader>l', -- `,ls=` align by `=`
         start_with_preview = '<leader>L', -- interaction mode
     },
     silent = false,

@@ -235,7 +235,7 @@ require("bufferline").setup({
             style = 'icon',
         },
         buffer_close_icon = '󰅖',
-        modified_icon = '● ',
+        modified_icon = '  ',
         close_icon = ' ',
         left_trunc_marker = ' ',
         right_trunc_marker = ' ',
@@ -308,38 +308,8 @@ require("bufferline").setup({
                 return normalized_ft_a < normalized_ft_b
             end
 
-            -- If filetypes are the same, sort by similarity
-            local function get_similarity_score(name1, name2)
-                -- Compare without considering extension (as filetype handles it)
-                local base1 = name1:match("(.+)%..+$") or name1
-                local base2 = name2:match("(.+)%..+$") or name2
-
-                -- Calculate longest common prefix
-                local min_len = math.min(#base1, #base2)
-                local prefix_len = 0
-                for i = 1, min_len do
-                    if base1:sub(i, i) ~= base2:sub(i, i) then break end
-                    prefix_len = i
-                end
-
-                -- Weighted score: 60% prefix similarity, 30% length difference, 10% lexicographical order
-                local prefix_score = prefix_len / min_len
-                local len_score = 1 - math.abs(#base1 - #base2) / math.max(#base1, #base2)
-                local lex_score = base1 < base2 and 1 or 0
-
-                return 0.6 * prefix_score + 0.3 * len_score + 0.1 * lex_score
-            end
-
-            local similarity = get_similarity_score(buffer_a.name, buffer_b.name)
-
-            -- Similarity threshold: considered dissimilar if below this value
-            if similarity < 0.4 then
-                -- If dissimilar, sort by filename length
-                return #buffer_a.name < #buffer_b.name
-            else
-                -- If similar, sort by filename lexicographically
-                return buffer_a.name < buffer_b.name
-            end
+            -- If filetypes are the same, sort by filename lexicographically
+            return buffer_a.name < buffer_b.name
         end,
         pick = {
             alphabet = "abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMOPQRSTUVWXYZ1234567890",
@@ -365,6 +335,26 @@ require("bufferline").setup({
                     }
                 },
             },
+        },
+    },
+    highlights = {
+        buffer_selected = {
+                fg = "#333333",
+                bg = "#87CEFA",
+                bold = true,
+                italic = true,
+        },
+        modified = {
+            fg = "#ff5a96",
+            ctermfg = 204,
+        },
+        modified_visible = {
+            fg = "#ff5a96",
+            ctermfg = 204,
+        },
+        modified_selected = {
+            fg = "#ff5a96",
+            ctermfg = 204,
         },
     },
 })

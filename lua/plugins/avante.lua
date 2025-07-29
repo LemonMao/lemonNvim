@@ -15,9 +15,9 @@ avanteOpts.opts = {
     providers = {
         gemini = {
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
-            -- model = "gemini-2.5-pro-exp-03-25", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+            model = "gemini-2.5-pro", -- The Gemini model to use (e.g., "gemini-2.0-flash").
             -- model = "gemini-2.0-flash-thinking-exp",
-            model = "gemini-2.5-flash-preview-05-20",
+            -- model = "gemini-2.5-flash",
             disable_tools = false,
             extra_request_body = {
                 max_tokens = 131072, -- The maximum number of tokens in the generated response.
@@ -57,7 +57,7 @@ avanteOpts.opts = {
         gemini_flash = {
             __inherited_from = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-            model = "gemini-2.0-flash",
+            model = "gemini-2.5-flash-lite-preview-06-17",
             disable_tools = false,
             extra_request_body = {
                 max_tokens = 16384, -- The maximum number of tokens in the generated response.
@@ -111,7 +111,6 @@ avanteOpts.opts = {
         timeout = 60000, -- Timeout in milliseconds
     },
     mappings = {
-        -- @class AvanteConflictMappings
         diff = {
             ours = "co",
             theirs = "ct",
@@ -133,13 +132,23 @@ avanteOpts.opts = {
         },
         submit = {
             normal = "<CR>",
-            insert = nil,
+            insert = "<C-d>",
+        },
+        cancel = {
+            normal = { "<C-c>", "<Esc>", "q" },
+            insert = { "<C-c>" },
         },
         sidebar = {
             apply_all = "A",
             apply_cursor = "a",
+            retry_user_request = "r",
+            edit_user_request = "e",
             switch_windows = "<Tab>",
             reverse_switch_windows = "<S-Tab>",
+            remove_file = "d",
+            add_file = "@",
+            close = { "<Esc>", "q" },
+            close_from_input = nil, -- e.g., { normal = "<Esc>", insert = "<C-d>" }
         },
     },
     -- ask = "<leader>aa",

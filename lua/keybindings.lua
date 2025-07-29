@@ -135,7 +135,8 @@ end
 
 local function close_preview_window()
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == "" and buf ~= vim.api.nvim_get_current_buf() then
+        local buf_name = vim.api.nvim_buf_get_name(buf)
+        if vim.api.nvim_buf_is_valid(buf) and (buf_name == "" or buf_name:find("NvimTree")) and buf ~= vim.api.nvim_get_current_buf() then
             vim.api.nvim_buf_delete(buf, {force = true})
         end
     end
@@ -168,7 +169,7 @@ map("n", "<C-Down>", ":resize -10<CR>", { desc = "Reduce horizonal windown size"
 map("n", "<C-Up>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
 map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
 map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
-map({'n', 't', 'v'}, "<A-c>", close_preview_window, { desc = "Bufferline: Close empty buffers"})
+map({'n', 't', 'v'}, "<A-c>", close_preview_window, { desc = "Bufferline: Close preview window"})
 -- 等比例 <C-w> =
 -- 关当前窗口 <C-w>c
 map("v", "<", "<gv", { desc = "Visual indent" })
@@ -273,8 +274,8 @@ pluginKeys.telescopeList = {
 --
 -- lsp 快捷键设置
 pluginKeys.lspKeybinding = function(mapbuf)
-  mapbuf("x", "<leader>r", ":lua vim.lsp.buf.rename()<CR>", { desc = "LSP rename" })
-  mapbuf("n", "<leader>ca", ":lua vim.lsp.buf.code_action()<CR>", { desc = "LSP code action" })
+  mapbuf("x", "gn", ":lua vim.lsp.buf.rename()<CR>", { desc = "LSP rename" })
+  mapbuf("n", "ga", ":lua vim.lsp.buf.code_action()<CR>", { desc = "LSP code action" })
   mapbuf("n", "gd", ":lua vim.lsp.buf.definition()<CR>", { desc = "LSP goto definition" })
   mapbuf("n", "gh", ":lua vim.lsp.buf.hover()<CR>", { desc = "LSP goto hover" })
   mapbuf("n", "gr", ":lua vim.lsp.buf.references()<CR>", { desc = "LSP goto reference" })
