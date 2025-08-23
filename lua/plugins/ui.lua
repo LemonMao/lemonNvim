@@ -285,32 +285,34 @@ require("bufferline").setup({
         auto_toggle_bufferline = true,
 
         -- Filename similarity sorting
-        sort_by = function(buffer_a, buffer_b)
-            -- Get the filetype of the buffers
-            local filetype_a = vim.api.nvim_get_option_value('filetype', { buf = buffer_a.bufnr })
-            local filetype_b = vim.api.nvim_get_option_value('filetype', { buf = buffer_b.bufnr })
-
-            -- vim.notify_once("Get filetype: ")
-            -- vim.notify_once("Get filetype: " .. filetype_a .. ":" .. filetype_b, vim.log.levels.INFO, { title = "Sort by type" })
-            -- Normalize filetypes: treat 'c' and 'cpp' as the same
-            local function normalize_filetype(ft)
-                if ft == 'c' or ft == 'cpp' then
-                    return 'c_cpp'
-                end
-                return ft
-            end
-
-            local normalized_ft_a = normalize_filetype(filetype_a)
-            local normalized_ft_b = normalize_filetype(filetype_b)
-
-            -- First, group by filetype
-            if normalized_ft_a ~= normalized_ft_b then
-                return normalized_ft_a < normalized_ft_b
-            end
-
-            -- If filetypes are the same, sort by filename lexicographically
-            return buffer_a.name < buffer_b.name
-        end,
+--[[
+   [         sort_by = function(buffer_a, buffer_b)
+   [             -- Get the filetype of the buffers
+   [             local filetype_a = vim.api.nvim_get_option_value('filetype', { buf = buffer_a.bufnr })
+   [             local filetype_b = vim.api.nvim_get_option_value('filetype', { buf = buffer_b.bufnr })
+   [
+   [             -- vim.notify_once("Get filetype: ")
+   [             -- vim.notify_once("Get filetype: " .. filetype_a .. ":" .. filetype_b, vim.log.levels.INFO, { title = "Sort by type" })
+   [             -- Normalize filetypes: treat 'c' and 'cpp' as the same
+   [             local function normalize_filetype(ft)
+   [                 if ft == 'c' or ft == 'cpp' then
+   [                     return 'c_cpp'
+   [                 end
+   [                 return ft
+   [             end
+   [
+   [             local normalized_ft_a = normalize_filetype(filetype_a)
+   [             local normalized_ft_b = normalize_filetype(filetype_b)
+   [
+   [             -- First, group by filetype
+   [             if normalized_ft_a ~= normalized_ft_b then
+   [                 return normalized_ft_a < normalized_ft_b
+   [             end
+   [
+   [             -- If filetypes are the same, sort by filename lexicographically
+   [             return buffer_a.name < buffer_b.name
+   [         end,
+   ]]
         pick = {
             alphabet = "abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMOPQRSTUVWXYZ1234567890",
         },
@@ -578,9 +580,9 @@ nvim_tree.setup({
     },
     view = {
         -- 宽度
-        width = 80,
+        width = 40,
         -- 也可以 'right'
-        side = 'right',
+        side = 'left',
         -- 不显示行数
         number = false,
         relativenumber = false,

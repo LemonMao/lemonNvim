@@ -35,7 +35,7 @@ vim.o.smartindent = true
 -- 搜索大小写不敏感，除非包含大写
 vim.o.ignorecase = true
 vim.o.smartcase = true
--- 搜索不要高亮
+-- 搜索高亮
 vim.o.hlsearch = true
 -- 边输入边搜索
 vim.o.incsearch = true
@@ -53,7 +53,7 @@ vim.o.whichwrap = '<,>,[,]'
 vim.o.hidden = true
 -- 鼠标支持
 vim.o.mouse = "a"
-vim.o.mousescroll = "ver:30,hor:10"
+vim.o.mousescroll = "ver:20,hor:10"
 -- 禁止创建备份文件
 vim.o.backup = false
 vim.o.writebackup = false
@@ -86,3 +86,11 @@ vim.o.showtabline = 2
 vim.o.showmode = false
 --  avante needs
 vim.o.laststatus = 3
+
+-- Set search highlight to yellow background after colorscheme loads
+vim.api.nvim_create_autocmd("ColorScheme", {
+  pattern = "*",
+  callback = function()
+    vim.api.nvim_set_hl(0, "Search", { bg = "#ffaf00", fg = "black" })
+  end,
+})

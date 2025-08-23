@@ -36,8 +36,8 @@ avanteOpts.opts = {
             disable_tools = true,
             extra_request_body = {
                 temperature = 0.25,
-                max_tokens = 131072, -- The maximum number of tokens in the generated response.
-                max_completion_tokens = 131072, -- Increase this to include reasoning tokens (for reasoning models)
+                max_tokens = 65536, -- The maximum number of tokens in the generated response.
+                max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
             },
         },
