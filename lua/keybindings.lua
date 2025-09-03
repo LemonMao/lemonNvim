@@ -143,6 +143,104 @@ local function close_preview_window()
     vim.cmd("PreviewClose")
 end
 
+--[[
+-- TODO: remove them later
+   [ local function search_cursor_string_in_current_buffer()
+   [     local current_file = vim.api.nvim_buf_get_name(0)
+   [     if vim.fn.empty(current_file) == 1 then
+   [         vim.notify("No file in current buffer to search.", vim.log.levels.WARN, { title = "Telescope Grep Current Buffer" })
+   [         return
+   [     end
+   [     -- telescope.builtin.grep_string automatically uses the word under the cursor
+   [     require('telescope.builtin').grep_string({ search_dirs = { current_file } })
+   [ end
+   [
+   [ -- New function to search string under cursor in the current buffer's directory
+   [ local function search_cursor_string_in_current_buffer_directory()
+   [     local current_file = vim.api.nvim_buf_get_name(0)
+   [     if vim.fn.empty(current_file) == 1 then
+   [         vim.notify("No file in current buffer. Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Grep CWD" })
+   [         require('telescope.builtin').grep_string() -- Fallback to PWD
+   [         return
+   [     end
+   [
+   [     local buffer_dir = vim.fn.fnamemodify(current_file, ":h")
+   [     if vim.fn.empty(buffer_dir) == 1 then
+   [         vim.notify("Could not determine buffer directory. Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Grep CWD" })
+   [         require('telescope.builtin').grep_string() -- Fallback to PWD
+   [         return
+   [     end
+   [
+   [     if vim.fn.isdirectory(buffer_dir) == 0 then
+   [         vim.notify("Directory not found or invalid: " .. buffer_dir .. ". Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Grep CWD" })
+   [         require('telescope.builtin').grep_string() -- Fallback to PWD
+   [         return
+   [     end
+   [
+   [     require('telescope.builtin').grep_string({ cwd = buffer_dir })
+   [ end
+   ]]
+
+-- Unified function for Telescope searches
+-- search_type: 'live_grep' (for user input) or 'grep_string' (for word under cursor)
+-- scope_type: 'pwd', 'buffer_dir', 'prompt_dir', 'current_buffer', 'open_files'
+local function do_telescope_search(search_type, scope_type)
+    local telescope_opts = {}
+    local current_file = vim.api.nvim_buf_get_name(0)
+    local has_file = (vim.fn.empty(current_file) == 0)
+    -- vim.notify("file: " .. current_file .. ", has_file: " .. tostring(has_file), vim.log.levels.WARN, { title = "Telescope Search" })
+
+    if scope_type == 'buffer_dir' then
+        local buffer_dir = ""
+        if has_file then
+            buffer_dir = vim.fn.fnamemodify(current_file, ":h")
+        end
+
+        if vim.fn.empty(buffer_dir) == 1 or vim.fn.isdirectory(buffer_dir) == 0 then
+            vim.notify("Could not determine valid buffer directory. Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Search" })
+            -- Fallback to PWD (telescope_opts remains empty)
+        else
+            telescope_opts.cwd = buffer_dir
+        end
+    elseif scope_type == 'prompt_dir' then
+        local initial_dir = has_file and vim.fn.fnamemodify(current_file, ":h") or vim.fn.getcwd()
+        local user_input_dir = vim.fn.input("Search directory: ", initial_dir, "dir")
+
+        if user_input_dir == nil then
+            vim.notify("Search cancelled.", vim.log.levels.INFO, { title = "Telescope Search" })
+            return
+        end
+        if vim.fn.empty(user_input_dir) == 1 or vim.fn.isdirectory(user_input_dir) == 0 then
+            vim.notify("Invalid or empty directory provided. Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Search" })
+            -- Fallback to PWD
+        else
+            telescope_opts.cwd = user_input_dir
+        end
+    elseif scope_type == 'open_files' then
+        telescope_opts.grep_open_files = true
+    elseif scope_type == 'current_buffer' then
+        if not has_file then
+            vim.notify("No file in current buffer to search.", vim.log.levels.WARN, { title = "Telescope Search" })
+            return
+        end
+        telescope_opts.search_dirs = { current_file }
+    end
+    -- If scope_type is 'pwd', telescope_opts remains empty, defaulting to PWD.
+
+    if search_type == 'live_grep' then
+        if scope_type == 'current_buffer' then
+            require('telescope.builtin').current_buffer_fuzzy_find()
+        else
+            require('telescope.builtin').live_grep(telescope_opts)
+        end
+    elseif search_type == 'grep_string' then
+        require('telescope.builtin').grep_string(telescope_opts)
+    else
+        vim.notify("Invalid search type provided.", vim.log.levels.ERROR, { title = "Telescope Search" })
+    end
+end
+
+
 -- ## -------------------------------------- ##
 -- ## F1 ~~ F12 Hotkeys
 -- ## -------------------------------------- ##
@@ -198,9 +296,10 @@ map({'n', 't', 'v'}, '<A-9>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 9<CR>', { de
 -- Terminal
 map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
 map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
+map("t", "<C-u>", "<C-\\><C-n><C-u>", { desc = "Exit terminal mode and scroll up page"})
 -- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})
-map('n', '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
-map('n', '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
+map({'n', 't', 'v'}, '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
+map({'n', 't', 'v'}, '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
 
 -- ## ------------------------------ ##
 -- ## AI
@@ -230,16 +329,22 @@ map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message 
 -- Telescope, find files/global grep
 map("n", "sc", ":Telescope ", { desc = "Type :Telescope command" })
 map("n", "sf", ":Telescope find_files<CR>", { desc = "Search for files in PWD" })
-map("n", "sg", ":Telescope live_grep<CR>", { desc = "Searches for the string in your PWD" })
-map("n", "sgd", search_string_in_directory, { desc = "Grep in directory (prompt)" })
-map("n", "sgg", ":Telescope grep_string<CR>", { desc = "Searches for the string under your cursor in your PWD" })
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Lists previously open files" })
-map("n", "ss", ":Telescope current_buffer_fuzzy_find<CR>", { desc = "Search string of the current buffer" })
--- map("n", "ssg", ":Telescope current_buffer_fuzzy_find<CR>", { desc = "Search string of the current buffer" })
 map("n", "st", ":Telescope treesitter<CR>", { desc = "Lists function names, variables, and other symbols from treesitter queries" })
 map("n", "sh", ":Telescope man_pages sections={'ALL'}<CR>", { desc = "Lists manpage entries" })
 map("n", "sk", ":Telescope keymaps <CR>", { desc = "Lists manpage entries" })
+-- grep xxx string from xxx
+map("n", "sg",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Search string in current buffer" })
+map("n", "sgf", function() do_telescope_search('live_grep', 'open_files') end, { desc = "Search string in the open buffers" })
+map("n", "sgd", function() do_telescope_search('live_grep', 'prompt_dir') end, { desc = "Search string in directory" })
+map("n", "sgg", function() do_telescope_search('live_grep', 'pwd') end, { desc = "Search string in your PWD" })
+-- search cursor string from xxx
+map("n", "ss",  function() do_telescope_search('grep_string', 'current_buffer') end, { desc = "Search string under cursor in current buffer" })
+map("n", "ssf", function() do_telescope_search('grep_string', 'open_files') end, { desc = "Search string under cursor in open buffers" })
+map("n", "ssd", function() do_telescope_search('grep_string', 'prompt_dir') end, { desc = "Search string under cursor in directory" })
+map("n", "ssg", function() do_telescope_search('grep_string', 'pwd') end, { desc = "Searches for the string under your cursor in your PWD" })
+
 -- Telescope 列表中 插入模式快捷键
 local open_with_trouble = require("trouble.sources.telescope").open
 -- Use this to add more results without clearing the trouble list

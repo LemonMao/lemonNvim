@@ -11,7 +11,7 @@ avanteOpts.opts = {
     --     max_tokens = 4096,
     -- },
     -- provider = "deepseek",
-    provider = "gemini",
+    provider = "gemini_flash",
     providers = {
         gemini = {
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
@@ -57,7 +57,7 @@ avanteOpts.opts = {
         gemini_flash = {
             __inherited_from = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-            model = "gemini-2.5-flash-lite-preview-06-17",
+            model = "gemini-2.5-flash",
             disable_tools = false,
             extra_request_body = {
                 max_tokens = 16384, -- The maximum number of tokens in the generated response.
@@ -167,7 +167,7 @@ avanteOpts.opts = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
         wrap = true, -- similar to vim.o.wrap
-        width = 50, -- default % based on available width
+        width = 60, -- default % based on available width
         height = 60,
         sidebar_header = {
             enabled = true, -- true, false to enable/disable the header

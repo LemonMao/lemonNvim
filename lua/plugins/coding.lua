@@ -393,8 +393,8 @@ local function clean_context()
 end
 
 -- Key mappings
-vim.keymap.set({'x'}, ',cc', add_context, { noremap = true, silent = true })
-vim.keymap.set('n', ',cl', clean_context, { noremap = true, silent = true })
+vim.keymap.set({'x'}, ',ac', add_context, { noremap = true, silent = true })
+vim.keymap.set('n', ',acl', clean_context, { noremap = true, silent = true })
 
 
 -- ## ------------------------------ ##
