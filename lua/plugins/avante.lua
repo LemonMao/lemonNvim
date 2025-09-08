@@ -3,7 +3,7 @@ local avanteOpts = {}
 avanteOpts.opts = {
     -- @alias avante.Mode "agentic" | "legacy"
     mode = "legacy",
-    auto_suggestions_provider = "gemini_flash",
+    auto_suggestions_provider = "deepseek_r",
     -- claude = {
     --     endpoint = "https://api.anthropic.com",
     --     model = "claude-3-5-sonnet-20241022",

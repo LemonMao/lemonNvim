@@ -282,7 +282,7 @@ map("n", "<F2>", ":Telescope projects<CR>", { desc = "Telescope projects" })
 -- Enhanced F3 keybinding for different modes
 -- map('n', '<F3>', ":1,$s/\<<C-R><C-W>\>//g", { desc = "Replace all" })
 map({'n','x'}, '<F3>', replace_text_in_cursor, { desc = "Replace current cursor text" })
-map("n", "<F9>", ":Cscope find s ", { desc = "Gtags: find references" })
+map("n", "<F9>", ":Cscope find g ", { desc = "Gtags: find references" })
 
 -- ## ------------------------------ ##
 -- ## Windows Hotkeys
@@ -493,6 +493,7 @@ map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "Diag
 map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "Diag: Open LSP def/ref/..." })  -- LSP Definitions / references / ... (Trouble)
 map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "Diag: Open Trouble local list" })                   -- Location List (Trouble)
 map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "Diag: Open Trouble Quickfix" })                    -- Quickfix List (Trouble)
+map("n", "<leader>dt", ":TagbarToggle<CR>", { desc = "Diag: Open Tagbar" })                    -- Quickfix List (Trouble)
 --
 -- git
 map('n', '<leader>gb', ':BlameToggle<CR>', { desc = "Git: Diplay Blame history" })
@@ -503,8 +504,6 @@ map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { de
 map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code for block" })
 map('v', '<leader>=j', ':!jq .<CR>', { desc = "Format json code for block" })
 --
--- transfer upload toggle
-map('n', '<leader>tt', ':TransferToggle<CR>', { desc = "Transfer: upload toggle" })
 -- complete nvim-cmp
 pluginKeys.cmp = function(cmp, luasnip)
     local feedkey = function(key, mode)
