@@ -188,7 +188,32 @@ local function do_telescope_search(search_type, scope_type)
     local telescope_opts = {}
     local current_file = vim.api.nvim_buf_get_name(0)
     local has_file = (vim.fn.empty(current_file) == 0)
-    -- vim.notify("file: " .. current_file .. ", has_file: " .. tostring(has_file), vim.log.levels.WARN, { title = "Telescope Search" })
+    local search_query = ""
+
+    -- Determine search_query based on current mode
+    local current_mode = vim.fn.mode()
+    if current_mode == 'v' or current_mode == 'V' or current_mode == '\22' then
+        -- Save current register and visual selection
+        local saved_register = vim.fn.getreg('"')
+        local saved_register_type = vim.fn.getregtype('"')
+
+        -- Yank the visual selection
+        vim.cmd('silent normal! y')
+
+        -- Get the yanked text
+        search_query = vim.fn.getreg('"')
+
+        -- Restore register
+        vim.fn.setreg('"', saved_register, saved_register_type)
+
+        if search_query == "" then
+            vim.notify("No text selected for search.", vim.log.levels.WARN, { title = "Telescope Search" })
+            return
+        end
+
+        -- Remove trailing newline if present
+        search_query = search_query:gsub('\n$', '')
+    end
 
     if scope_type == 'buffer_dir' then
         local buffer_dir = ""
@@ -227,6 +252,11 @@ local function do_telescope_search(search_type, scope_type)
     end
     -- If scope_type is 'pwd', telescope_opts remains empty, defaulting to PWD.
 
+    -- Add the determined search query to the telescope options
+    if search_query ~= "" then
+        telescope_opts.search = search_query
+    end
+
     if search_type == 'live_grep' then
         if scope_type == 'current_buffer' then
             require('telescope.builtin').current_buffer_fuzzy_find()
@@ -239,6 +269,9 @@ local function do_telescope_search(search_type, scope_type)
         vim.notify("Invalid search type provided.", vim.log.levels.ERROR, { title = "Telescope Search" })
     end
 end
+
+
+
 
 
 -- ## -------------------------------------- ##
@@ -322,28 +355,30 @@ map("n", "<leader>F", ":NvimTreeFindFile<CR>", { desc = "open dir tree for file"
 map("n", "<leader>nl", ":Noice last<CR>", { desc = "Noice: Last message" })
 map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message history" })
 -- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })
+-- Readable
+map("x", "<leader>ow", ":set wrap!<CR>", { desc = "Toggle line wrapping" })
 
 -- ## ------------------------------ ##
 -- ## Search
 -- ## ------------------------------ ##
 -- Telescope, find files/global grep
-map("n", "sc", ":Telescope ", { desc = "Type :Telescope command" })
-map("n", "sf", ":Telescope find_files<CR>", { desc = "Search for files in PWD" })
-map("n", "sb", ":Telescope buffers<CR>", { desc = "Lists open buffers" })
-map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Lists previously open files" })
-map("n", "st", ":Telescope treesitter<CR>", { desc = "Lists function names, variables, and other symbols from treesitter queries" })
-map("n", "sh", ":Telescope man_pages sections={'ALL'}<CR>", { desc = "Lists manpage entries" })
-map("n", "sk", ":Telescope keymaps <CR>", { desc = "Lists manpage entries" })
+map("n", "sc", ":Telescope ", { desc = "Telescope: Type telescope command" })
+map("n", "sf", ":Telescope find_files<CR>", { desc = "Telescope: Search for files in PWD" })
+map("n", "sb", ":Telescope buffers<CR>", { desc = "Telescope: Lists open buffers" })
+map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Telescope: Lists previously open files" })
+map("n", "st", ":Telescope treesitter<CR>", { desc = "Telescope: Lists function names, variables, and other symbols from treesitter queries" })
+map("n", "sh", ":Telescope man_pages sections={'ALL'}<CR>", { desc = "Telescope: Lists manpage entries" })
+map("n", "sk", ":Telescope keymaps <CR>", { desc = "Telescope: Lists manpage entries" })
 -- grep xxx string from xxx
-map("n", "sg",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Search string in current buffer" })
-map("n", "sgf", function() do_telescope_search('live_grep', 'open_files') end, { desc = "Search string in the open buffers" })
-map("n", "sgd", function() do_telescope_search('live_grep', 'prompt_dir') end, { desc = "Search string in directory" })
-map("n", "sgg", function() do_telescope_search('live_grep', 'pwd') end, { desc = "Search string in your PWD" })
+map("n", "sg",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Telescope: Search string in current buffer" })
+map("n", "sgf", function() do_telescope_search('live_grep', 'open_files') end, { desc = "Telescope: Search string in the open buffers" })
+map("n", "sgd", function() do_telescope_search('live_grep', 'prompt_dir') end, { desc = "Telescope: Search string in directory" })
+map("n", "sgg", function() do_telescope_search('live_grep', 'pwd') end, { desc = "Telescope: Search string in your PWD" })
 -- search cursor string from xxx
-map("n", "ss",  function() do_telescope_search('grep_string', 'current_buffer') end, { desc = "Search string under cursor in current buffer" })
-map("n", "ssf", function() do_telescope_search('grep_string', 'open_files') end, { desc = "Search string under cursor in open buffers" })
-map("n", "ssd", function() do_telescope_search('grep_string', 'prompt_dir') end, { desc = "Search string under cursor in directory" })
-map("n", "ssg", function() do_telescope_search('grep_string', 'pwd') end, { desc = "Searches for the string under your cursor in your PWD" })
+map({"n", "x"}, "ss",  function() do_telescope_search('grep_string', 'current_buffer') end, { desc = "Telescope: Search string under cursor in current buffer" })
+map({"n", "x"}, "ssf", function() do_telescope_search('grep_string', 'open_files') end, { desc = "Telescope: Search string under cursor in open buffers" })
+map({"n", "x"}, "ssd", function() do_telescope_search('grep_string', 'prompt_dir') end, { desc = "Telescope: Search string under cursor in directory" })
+map({"n", "x"}, "ssg", function() do_telescope_search('grep_string', 'pwd') end, { desc = "Telescope: Searches for the string under your cursor in your PWD" })
 
 -- Telescope 列表中 插入模式快捷键
 local open_with_trouble = require("trouble.sources.telescope").open
@@ -466,6 +501,7 @@ map('n', '<leader>gn', ':GetGithubFileUrl<CR>', { desc = "Git: Diplay current fi
 -- format - conform
 map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { desc = "Format code for whole file" })
 map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code for block" })
+map('v', '<leader>=j', ':!jq .<CR>', { desc = "Format json code for block" })
 --
 -- transfer upload toggle
 map('n', '<leader>tt', ':TransferToggle<CR>', { desc = "Transfer: upload toggle" })

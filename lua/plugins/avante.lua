@@ -167,8 +167,8 @@ avanteOpts.opts = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
         wrap = true, -- similar to vim.o.wrap
-        width = 60, -- default % based on available width
-        height = 60,
+        width = 50, -- default % based on available width
+        height = 70,
         sidebar_header = {
             enabled = true, -- true, false to enable/disable the header
             align = "center", -- left, center, right for title

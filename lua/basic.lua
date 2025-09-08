@@ -45,10 +45,15 @@ vim.o.cmdheight = 1
 -- 当文件被外部程序修改时，自动加载
 vim.o.autoread = true
 vim.bo.autoread = true
+
 -- 禁止折行
-vim.wo.wrap = false
+vim.o.wrap = true
+vim.o.linebreak = true     -- 不在单词中间断行，而是在空格等符号处断行，更美观
+vim.o.breakindent = true   -- 换行后的行保持与原始行相同的缩进
+vim.o.showbreak = '↪ '     -- 在换行的行首显示一个箭头符号，提示这里是视觉换行
 -- 光标在行首尾时<Left><Right>可以跳到下一行
 vim.o.whichwrap = '<,>,[,]'
+
 -- 允许隐藏被修改过的buffer
 vim.o.hidden = true
 -- 鼠标支持
@@ -86,6 +91,7 @@ vim.o.showtabline = 2
 vim.o.showmode = false
 --  avante needs
 vim.o.laststatus = 3
+
 
 -- Set search highlight to yellow background after colorscheme loads
 vim.api.nvim_create_autocmd("ColorScheme", {
