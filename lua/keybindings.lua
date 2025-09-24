@@ -270,6 +270,15 @@ local function do_telescope_search(search_type, scope_type)
     end
 end
 
+-- Function to search man pages with word under cursor
+local function search_man_pages_with_cursor_word()
+    local word = vim.fn.expand('<cword>')
+    -- Copy to system clipboard
+    vim.fn.setreg('+', word)
+    -- Open Telescope man_pages with the word as default text
+    require('telescope.builtin').man_pages({ sections = {'ALL'}, default_text = word })
+end
+
 
 
 
@@ -312,6 +321,7 @@ map("n", "<A-h>", ":BufferLineCyclePrev<CR>", { desc = "Bufferline: Switch to pr
 map("t", "<A-h>", "<C-\\><C-n>:BufferLineCyclePrev<CR>", { desc = "Bufferline: Switch to previous buffer"})
 map("n", "<A-l>", ":BufferLineCycleNext<CR>", { desc = "Bufferline: Switch to next buffer"})
 map("t", "<A-l>", "<C-\\><C-n>:BufferLineCycleNext<CR>", { desc = "Bufferline: Switch to next buffer"})
+map({'n', 't', 'v'}, '<A-r>', '<C-\\><C-n>:BufferLineMoveNext<CR>:BufferLineMovePrev<CR>', { desc = "Bufferline: Refresh senquence"})
 map({'n', 't', 'v'}, "<A-n>", "<C-\\><C-n>:BufferLineMoveNext<CR>", { desc = "Bufferline: Move current buffer to next location"})
 map({'n', 't', 'v'}, "<A-p>", "<C-\\><C-n>:BufferLineMovePrev<CR>", { desc = "Bufferline: Move current buffer to previous location"})
 map({'n', 't', 'v'}, "<A-w>", close_empty_and_current_buffers, { desc = "Bufferline: Close empty buffers"})
@@ -328,11 +338,11 @@ map({'n', 't', 'v'}, '<A-8>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 8<CR>', { de
 map({'n', 't', 'v'}, '<A-9>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 9<CR>', { desc = "Bufferline: Switch to buffer with number"})
 -- Terminal
 map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode and switch buffer" })
-map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
+-- map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
 map("t", "<C-u>", "<C-\\><C-n><C-u>", { desc = "Exit terminal mode and scroll up page"})
 -- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})
-map({'n', 't', 'v'}, '<leader>tv', ':vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
-map({'n', 't', 'v'}, '<leader>te', ':terminal<CR>', { desc = "Open terminal in vertical split" })
+map({'n', 't', 'v'}, '<leader>tv', '<C-\\><C-n><Cmd>vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
+map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR>', { desc = "Open terminal in vertical split" })
 
 -- ## ------------------------------ ##
 -- ## AI
@@ -358,7 +368,6 @@ map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message 
 -- Readable
 map("x", "<leader>ow", ":set wrap!<CR>", { desc = "Toggle line wrapping" })
 
--- ## ------------------------------ ##
 -- ## Search
 -- ## ------------------------------ ##
 -- Telescope, find files/global grep
@@ -367,7 +376,7 @@ map("n", "sf", ":Telescope find_files<CR>", { desc = "Telescope: Search for file
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Telescope: Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Telescope: Lists previously open files" })
 map("n", "st", ":Telescope treesitter<CR>", { desc = "Telescope: Lists function names, variables, and other symbols from treesitter queries" })
-map("n", "sh", ":Telescope man_pages sections={'ALL'}<CR>", { desc = "Telescope: Lists manpage entries" })
+map("n", "sh", search_man_pages_with_cursor_word, { desc = "Telescope: Search man pages for word under cursor" })
 map("n", "sk", ":Telescope keymaps <CR>", { desc = "Telescope: Lists manpage entries" })
 -- grep xxx string from xxx
 map("n", "sg",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Telescope: Search string in current buffer" })

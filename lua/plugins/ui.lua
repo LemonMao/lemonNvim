@@ -217,10 +217,6 @@ lualine.setup {
 --
 vim.opt.termguicolors = true
 
--- Define terminal buffers storage locally
-local terminal_bufs = {}
-local next_terminal_index = 1
-
 require("bufferline").setup({
     options = {
         mode = "buffers", -- set to "tabs" to only show tabpages instead
@@ -242,12 +238,8 @@ require("bufferline").setup({
         -- 自定义 name_formatter 函数
         name_formatter = function(buf)
             -- 处理终端缓冲区和空文件类型
-            if buf.name:match('term') or buf.name:match('bash') then
-                if not terminal_bufs[buf.bufnr] then
-                    terminal_bufs[buf.bufnr] = next_terminal_index
-                    next_terminal_index = next_terminal_index + 1
-                end
-                return "term" .. terminal_bufs[buf.bufnr]
+            if buf.name:match('^term') or buf.name:match('^bash') then
+                return "Term"
             end
             -- 其他类型缓冲区直接返回文件名
             return buf.name
@@ -273,7 +265,7 @@ require("bufferline").setup({
         show_buffer_close_icons = true,
         show_close_icon = true,
         show_tab_indicators = true,
-        show_duplicate_prefix = true, -- whether to show duplicate buffer prefix
+        show_duplicate_prefix = false, -- whether to show duplicate buffer prefix
         duplicates_across_groups = true, -- whether to consider duplicate paths in different groups as duplicates
         persist_buffer_sort = true, -- whether or not custom sorted buffers should persist
         move_wraps_at_ends = false, -- whether or not the move command "wraps" at the first or last position
@@ -284,6 +276,7 @@ require("bufferline").setup({
         always_show_bufferline = true,
         auto_toggle_bufferline = true,
 
+        -- sort_by = 'id',
         -- Filename similarity sorting
 --[[
    [         sort_by = function(buffer_a, buffer_b)
@@ -330,7 +323,7 @@ require("bufferline").setup({
                         sp = "blue"
                     },
                     matcher = function(buf)       -- 判断缓冲区是否属于本组（必填）
-                        return buf.name:match('^term%d+$')
+                        return buf.name:match('^Term$')
                     end,
                     separator = {                 -- 分隔符样式（可选）
                         style = require('bufferline.groups').separator.tab

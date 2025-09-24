@@ -6,6 +6,9 @@ end
 
 local luasnipm = require("luasnip")
 
+-- Track the current enabled status of nvim-cmp
+local cmp_is_enabled = true
+
 cmp.setup({
     snippet = {
         -- REQUIRED - you must specify a snippet engine
@@ -13,6 +16,9 @@ cmp.setup({
             -- vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
             require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
         end,
+    },
+    completion = {
+        keyword_length = 3,
     },
     window = {
         completion = cmp.config.window.bordered(),
@@ -46,6 +52,24 @@ cmp.setup({
             { name = 'buffer' }, { name = 'path' }, { name = 'cmdline' }
         }
     )
+})
+
+-- Function to toggle nvim-cmp
+local function toggle_cmp_status()
+    if cmp_is_enabled then
+        cmp.setup({ enabled = false })
+        cmp_is_enabled = false
+        vim.notify("nvim-cmp disabled", vim.log.levels.INFO, { title = "nvim-cmp" })
+    else
+        cmp.setup({ enabled = true })
+        cmp_is_enabled = true
+        vim.notify("nvim-cmp enabled", vim.log.levels.INFO, { title = "nvim-cmp" })
+    end
+end
+
+-- Create a user command to toggle nvim-cmp
+vim.api.nvim_create_user_command('CmpToggle', toggle_cmp_status, {
+    desc = 'Toggle nvim-cmp completion',
 })
 
 -- Use buffer source for `/` and `?` (if you enabled `native_menu`, this won't work anymore).
