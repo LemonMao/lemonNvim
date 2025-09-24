@@ -3,7 +3,7 @@ local avanteOpts = {}
 avanteOpts.opts = {
     -- @alias avante.Mode "agentic" | "legacy"
     mode = "legacy",
-    auto_suggestions_provider = "deepseek_r",
+    auto_suggestions_provider = "gemini_flash",
     -- claude = {
     --     endpoint = "https://api.anthropic.com",
     --     model = "claude-3-5-sonnet-20241022",
@@ -11,7 +11,8 @@ avanteOpts.opts = {
     --     max_tokens = 4096,
     -- },
     -- provider = "deepseek",
-    provider = "gemini_flash",
+    -- provider = "gemini_flash",
+    provider = "gemini",
     providers = {
         gemini = {
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
@@ -21,6 +22,18 @@ avanteOpts.opts = {
             disable_tools = false,
             extra_request_body = {
                 max_tokens = 131072, -- The maximum number of tokens in the generated response.
+                generationConfig = {
+                    temperature = 0.25,
+                },
+            },
+        },
+        gemini_flash = {
+            __inherited_from = "gemini",
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+            model = "gemini-2.5-flash",
+            disable_tools = false,
+            extra_request_body = {
+                max_tokens = 131072, -- 128k, maximum number of tokens in the generated response.
                 generationConfig = {
                     temperature = 0.25,
                 },
@@ -36,7 +49,7 @@ avanteOpts.opts = {
             disable_tools = true,
             extra_request_body = {
                 temperature = 0.25,
-                max_tokens = 65536, -- The maximum number of tokens in the generated response.
+                max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
                 max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
             },
@@ -54,18 +67,6 @@ avanteOpts.opts = {
            [    disable_tools = false,
            [},
            ]]
-        gemini_flash = {
-            __inherited_from = "gemini",
-            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-            model = "gemini-2.5-flash",
-            disable_tools = false,
-            extra_request_body = {
-                max_tokens = 16384, -- The maximum number of tokens in the generated response.
-                generationConfig = {
-                    temperature = 0.25,
-                },
-            },
-        },
     },
     web_search_engine = {
         provider = "tavily",
@@ -106,7 +107,7 @@ avanteOpts.opts = {
     dual_boost = {
         enabled = false,
         first_provider = "gemini",
-        second_provider = "deepseek_v",
+        second_provider = "deepseek_r",
         prompt = "Based on the two reference outputs below, generate a response that incorporates elements from both but reflects your own judgment and unique perspective. Do not provide any explanation, just give the response directly. Reference Output 1: [{{provider1_output}}], Reference Output 2: [{{provider2_output}}]",
         timeout = 60000, -- Timeout in milliseconds
     },
@@ -234,6 +235,50 @@ avanteOpts.opts = {
     selector = {
         -- @alias avante.SelectorProvider "native" | "fzf_lua" | "mini_pick" | "snacks" | "telescope" | fun(selector: avante.ui.Selector): nil
         provider = "telescope",
+        exclude_auto_select = { "NvimTree" },
+    },
+    shortcuts = {
+        {
+            name = "refactor",
+            description = "Refactor code with best practices",
+            details = "Automatically refactor code to improve readability, maintainability, and follow best practices while preserving functionality",
+            prompt = "Please refactor the selected code following best practices, improving readability and maintainability while preserving functionality."
+        },
+        {
+            name = "explain",
+            description = "Explain the code",
+            details = "Provide a detailed, code-level description, similar to adding comments to code.Respond in Chinese.",
+            prompt = "Work as a professional programmer to explain the selected code. " ..
+                    "Provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
+                    "Respond in Chinese."
+        },
+        {
+            name = "explain_example",
+            description = "Explain the code",
+            details = "Provide a detailed, code-level description, similar to adding comments to code.Respond in Chinese.",
+            prompt = "Work as a professional programmer to explain the selected code. " ..
+                    "Provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
+                    "Respond in Chinese. Give examples to illustrate the concept."
+        },
+        {
+            name = "complete",
+            description = "Complete the code",
+            details = "Complete the code with readability, maintainability, and follow best practices while preserving functionality",
+            prompt = "Please complete the selected code following best practices, improving readability and maintainability while preserving functionality. Answer in Chinse."
+        },
+        {
+            name = "chinese",
+            description = "Answer in Chinse",
+            details = "Answer in Chinse",
+            prompt = "Answer in Chinse."
+        },
+        {
+            name = "example",
+            description = "Give examples to illustrate the concept",
+            details = "Give examples to illustrate the concept",
+            prompt = "Give examples to illustrate the concept. Answer in Chinse."
+        },
+        -- Add more custom shortcuts...
     }
 }
 

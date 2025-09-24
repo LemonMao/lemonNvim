@@ -40,6 +40,26 @@ require("lazy").setup({
         event = "VeryLazy",
         lazy = false,
         version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
+        keys = {
+            {
+                "<leader>a=",
+                function()
+                    local tree_ext = require("avante.extensions.nvim_tree")
+                    tree_ext.add_file()
+                end,
+                desc = "Select file in NvimTree",
+                ft = "NvimTree",
+            },
+            {
+                "<leader>a-",
+                function()
+                    local tree_ext = require("avante.extensions.nvim_tree")
+                    tree_ext.remove_file()
+                end,
+                desc = "Deselect file in NvimTree",
+                ft = "NvimTree",
+            },
+        },
         opts = require("plugins.avante").opts,
         -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
         build = "make",
