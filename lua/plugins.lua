@@ -270,5 +270,9 @@ require("lazy").setup({
     {
         "gauteh/vim-cppman",
     },
+    {
+        'fei6409/log-highlight.nvim',
+        opts = {},
+    },
     -- Plugin End
 })

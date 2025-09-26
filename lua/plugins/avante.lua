@@ -168,7 +168,7 @@ avanteOpts.opts = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
         wrap = true, -- similar to vim.o.wrap
-        width = 50, -- default % based on available width
+        width = 55, -- default % based on available width
         height = 70,
         sidebar_header = {
             enabled = true, -- true, false to enable/disable the header
@@ -245,20 +245,35 @@ avanteOpts.opts = {
             prompt = "Please refactor the selected code following best practices, improving readability and maintainability while preserving functionality."
         },
         {
-            name = "explain",
+            name = "explain_code",
             description = "Explain the code",
-            details = "Provide a detailed, code-level description, similar to adding comments to code.Respond in Chinese.",
+            details = "Explain the code",
             prompt = "Work as a professional programmer to explain the selected code. " ..
-                    "Provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
+                    "First, provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
+                    "At last provide a summary description/explaination. " ..
                     "Respond in Chinese."
         },
         {
             name = "explain_example",
-            description = "Explain the code",
-            details = "Provide a detailed, code-level description, similar to adding comments to code.Respond in Chinese.",
+            description = "Explain the code with example",
+            details = "Explain the code with example",
             prompt = "Work as a professional programmer to explain the selected code. " ..
-                    "Provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
-                    "Respond in Chinese. Give examples to illustrate the concept."
+                    "First, provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
+                    "At last provide a summary description/explaination. " ..
+                    "Always respond in Chinese. Give examples to illustrate the concept."
+        },
+        {
+            name = "explain_concept",
+            description = "Explain the concept of module",
+            details = "Explain the concept of module",
+            prompt = "Work as a professional software architect to explain the concept of module. I want to know: \n" ..
+                    "- What is the module used for? \n" ..
+                    "- Why design that? \n" ..
+                    "- What's the important components in this module? How to use them?\n" ..
+                    "  You should list the strcutre and comment for the important member variable.\n" ..
+                    "- How does it work with other modules? \n" ..
+                    "- Use an example to illustrate the workflow of it. \n" ..
+                    "Always respond in Chinese. The module is: "
         },
         {
             name = "complete",
@@ -270,7 +285,7 @@ avanteOpts.opts = {
             name = "chinese",
             description = "Answer in Chinse",
             details = "Answer in Chinse",
-            prompt = "Answer in Chinse."
+            prompt = "Always respond in Chinese in all chat."
         },
         {
             name = "example",
