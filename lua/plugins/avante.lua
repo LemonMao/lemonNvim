@@ -1,5 +1,4 @@
 local avanteOpts = {}
-
 avanteOpts.opts = {
     -- @alias avante.Mode "agentic" | "legacy"
     mode = "legacy",
@@ -48,25 +47,23 @@ avanteOpts.opts = {
             timeout = 30000, -- timeout in milliseconds
             disable_tools = true,
             extra_request_body = {
-                temperature = 0.25,
+                temperature = 0.20,
                 max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
                 max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
             },
         },
-        --[[
-           [deepseek_v = {
-           [    __inherited_from = "openai",
-           [    api_key_name = "DEEPSEEK_API_KEY",
-           [    endpoint = "https://api.deepseek.com",
-           [    model = "deepseek-chat",
-           [    -- model = "deepseek-reasoner",
-           [    timeout = 30000, -- timeout in milliseconds
-           [    temperature = 0.2, -- adjust if needed
-           [    max_tokens = 8192,
-           [    disable_tools = false,
-           [},
-           ]]
+        deepseek_v = {
+           __inherited_from = "openai",
+           api_key_name = "DEEPSEEK_API_KEY",
+           endpoint = "https://api.deepseek.com",
+           model = "deepseek-chat",
+           -- model = "deepseek-reasoner",
+           timeout = 30000, -- timeout in milliseconds
+           temperature = 0.2, -- adjust if needed
+           max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
+           disable_tools = false,
+        },
     },
     web_search_engine = {
         provider = "tavily",
@@ -168,7 +165,7 @@ avanteOpts.opts = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
         wrap = true, -- similar to vim.o.wrap
-        width = 55, -- default % based on available width
+        width = 60, -- default % based on available width
         height = 70,
         sidebar_header = {
             enabled = true, -- true, false to enable/disable the header
@@ -177,7 +174,7 @@ avanteOpts.opts = {
         },
         input = {
             prefix = "> ",
-            height = 10, -- Height of the input window in vertical layout
+            height = 15, -- Height of the input window in vertical layout
         },
         edit = {
             border = "rounded",
@@ -250,7 +247,15 @@ avanteOpts.opts = {
             details = "Explain the code",
             prompt = "Work as a professional programmer to explain the selected code. " ..
                     "First, provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
-                    "At last provide a summary description/explaination. " ..
+                    "At last provide a summary description/explaination of 'What is the module used for?Why design that?Use an example to illustrate the workflow of it.'. " ..
+                    "Respond in Chinese."
+        },
+        {
+            name = "explain_2code",
+            description = "Explain the summary of code",
+            details = "Explain the summary of code",
+            prompt = "Work as a professional programmer to explain the selected code. " ..
+                    "At last provide a summary description/explaination of 'What is the module used for?Why design that?Use an example to illustrate the workflow of it.'. " ..
                     "Respond in Chinese."
         },
         {
@@ -276,6 +281,17 @@ avanteOpts.opts = {
                     "Always respond in Chinese. The module is: "
         },
         {
+            name = "analyze",
+            description = "Analyze what happened",
+            details = "Analyze what happened",
+            prompt = "Work as a professional software architect to analyze what happened based on the information."..
+                " I want to know: \n" ..
+                "- What happened here? \n" ..
+                "- The rootcause. \n" ..
+                "- If you cannot find the rootcause. Image one situation will cause it.\n" ..
+                "Always respond in Chinese. The module is: "
+        },
+        {
             name = "complete",
             description = "Complete the code",
             details = "Complete the code with readability, maintainability, and follow best practices while preserving functionality",
@@ -291,7 +307,10 @@ avanteOpts.opts = {
             name = "example",
             description = "Give examples to illustrate the concept",
             details = "Give examples to illustrate the concept",
-            prompt = "Give examples to illustrate the concept. Answer in Chinse."
+            prompt = "Give examples to illustrate the concept of specified code.\n " ..
+                "- How to use it?\n" ..
+                "- Why design that?\n" ..
+                "Always respond in Chinese.The specifed code is:\n"
         },
         -- Add more custom shortcuts...
     }

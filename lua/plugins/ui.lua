@@ -238,7 +238,7 @@ require("bufferline").setup({
         -- 自定义 name_formatter 函数
         name_formatter = function(buf)
             -- 处理终端缓冲区和空文件类型
-            if buf.name:match('^term') or buf.name:match('^bash') then
+            if buf.name:match('^term') or buf.name:match('^bash$') then
                 return "Term"
             end
             -- 其他类型缓冲区直接返回文件名
@@ -320,10 +320,45 @@ require("bufferline").setup({
                     priority = 2,                 -- 显示优先级（可选）
                     highlight = {                 -- 高亮配置（可选）
                         underline = true,
-                        sp = "blue"
+                        fg = "#ab7b21",
+                        -- bg = "#c8bbbb"
                     },
                     matcher = function(buf)       -- 判断缓冲区是否属于本组（必填）
                         return buf.name:match('^Term$')
+                    end,
+                    separator = {                 -- 分隔符样式（可选）
+                        style = require('bufferline.groups').separator.tab
+                    }
+                },
+                {
+                    name = "Logs",               -- 组名（必填）
+                    icon = "",                  -- 组图标（可选）
+                    priority = 3,                 -- 显示优先级（可选）
+                    highlight = {                 -- 高亮配置（可选）
+                        underline = true,
+                        fg = "#19c032",
+                        -- bg = "#795410",
+                    },
+                    matcher = function(buf)       -- 判断缓冲区是否属于本组（必填）
+                        -- return buf.name:match('^Term$')
+                        return buf.name:match('%.log')
+                    end,
+                    separator = {                 -- 分隔符样式（可选）
+                        style = require('bufferline.groups').separator.tab
+                    }
+                },
+                {
+                    name = "Docs",               -- 组名（必填）
+                    icon = "",                  -- 组图标（可选）
+                    priority = 4,                 -- 显示优先级（可选）
+                    highlight = {                 -- 高亮配置（可选）
+                        underline = true,
+                        fg = "#334cbe",
+                        -- bg = "#79835b",
+                    },
+                    matcher = function(buf)       -- 判断缓冲区是否属于本组（必填）
+                        -- return buf.name:match('^Term$')
+                        return buf.name:match('%.md')
                     end,
                     separator = {                 -- 分隔符样式（可选）
                         style = require('bufferline.groups').separator.tab
