@@ -54,15 +54,20 @@ avanteOpts.opts = {
             },
         },
         deepseek_v = {
-           __inherited_from = "openai",
-           api_key_name = "DEEPSEEK_API_KEY",
-           endpoint = "https://api.deepseek.com",
-           model = "deepseek-chat",
-           -- model = "deepseek-reasoner",
-           timeout = 30000, -- timeout in milliseconds
-           temperature = 0.2, -- adjust if needed
-           max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
-           disable_tools = false,
+            __inherited_from = "openai",
+            api_key_name = "DEEPSEEK_API_KEY",
+            endpoint = "https://api.deepseek.com",
+            model = "deepseek-chat",
+            -- model = "deepseek-reasoner",
+            timeout = 30000, -- timeout in milliseconds
+            max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
+            disable_tools = false,
+            extra_request_body = {
+                temperature = 0.20,
+                max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
+                max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
+                reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
+            },
         },
     },
     web_search_engine = {

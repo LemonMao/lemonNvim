@@ -967,24 +967,108 @@ vim.keymap.set(
    ]]
 
 -- ## ------------------------------ ##
--- ## Visual Mode File Path Opener
+-- ## File Opener
 -- ## ------------------------------ ##
-vim.keymap.set("v", "<c-o>", function()
-    local selected_text = get_text_from_mode()
+-- Define image file patterns
+local hijack_file_patterns = { "%.png$", "%.jpg$", "%.jpeg$", "%.gif$", "%.webp$", "%.avif$" }
 
-    -- Trim whitespace and newlines
-    selected_text = selected_text:gsub("^%s*(.-)%s*$", "%1")
-
-    -- Check if it's an absolute path and the file exists
-    if vim.fn.filereadable(selected_text) == 1 then
-        vim.notify("Open file " .. selected_text, vim.log.levels.INFO)
-        vim.cmd("edit " .. vim.fn.fnameescape(selected_text))
-    else
-        -- Fallback to copy the string to system clipboard.
-        vim.notify("Copy ", vim.log.levels.INFO)
-        vim.cmd('"+y')
+-- Helper function to check if a file is an image based on its extension
+local function is_image_file(filepath)
+    local lower_filepath = string.lower(filepath)
+    for _, pattern in ipairs(hijack_file_patterns) do
+        if lower_filepath:match(pattern) then
+            return true
+        end
     end
-end, { noremap = true, silent = true, desc = "Open file if selected text is a valid path, else copy it" })
+    return false
+end
+
+-- Helper function to extract file path from cursor position or visual selection
+local function get_path_under_cursor_or_selection()
+    local mode = vim.fn.mode()
+    local path = ""
+
+    if mode:match("[vV]") then -- Visual mode
+        local save_reg = vim.fn.getreg('"')
+        local save_regtype = vim.fn.getregtype('"')
+        vim.cmd("silent normal! y")
+        path = vim.fn.getreg('"')
+        vim.fn.setreg('"', save_reg, save_regtype)
+    else -- Normal mode
+        local line = vim.fn.getline(".")
+        local col = vim.fn.col(".") -- 1-indexed cursor column
+
+        -- Helper to check if cursor is within a specific content's range
+        local function cursor_in_content_range(content_start_col, content_end_col)
+            return col >= content_start_col and col <= content_end_col
+        end
+
+        -- 1. Try to extract path from ![Image](path)
+        -- This regex will capture the path inside the parentheses
+        -- Example: ![Image](/tmp/path.webp)
+        -- cap1: ![Image]( , cap2: /tmp/path.webp , cap3: )
+        for cap1, cap2, cap3 in string.gmatch(line, "(!%[.-%]%s*%(%s*)([^)]+)(%s*%)%)") do
+            local start_of_cap1 = string.find(line, cap1, 1, true)
+            local start_of_cap2 = start_of_cap1 + #cap1
+            local end_of_cap2 = start_of_cap2 + #cap2 - 1
+
+            if start_of_cap1 and cursor_in_content_range(start_of_cap2, end_of_cap2) then
+                path = cap2
+                break
+            end
+        end
+
+        -- 2. If not found, try to extract from quoted string
+        -- Example: '/tmp/1.txt' or "/tmp/2.txt"
+        if path == "" then
+            -- Regex for single or double quoted strings
+            -- quote_char: ' or ", content: /tmp/1.txt
+            for quote_char, content in string.gmatch(line, "([\"'])(.-)%1") do
+                local start_of_quote_char = string.find(line, quote_char .. content .. quote_char, 1, true)
+                local start_of_content = start_of_quote_char + #quote_char
+                local end_of_content = start_of_content + #content - 1
+
+                if start_of_quote_char and cursor_in_content_range(start_of_content, end_of_content) then
+                    path = content
+                    break
+                end
+            end
+        end
+
+        -- 3. Fallback to file path under cursor
+        if path == "" then
+            path = vim.fn.expand("<cfile>")
+        end
+    end
+
+    return path:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
+end
+
+vim.keymap.set({"n", "v"}, "<A-o>", function()
+    local filepath = get_path_under_cursor_or_selection()
+
+    if filepath == "" then
+        vim.notify("No file path found under cursor or selection.", vim.log.levels.WARN)
+        return
+    end
+
+    -- Get absolute path for better handling by external tools or Neovim
+    local full_filepath = vim.fn.fnamemodify(filepath, ":p")
+
+    if is_image_file(full_filepath) then
+        -- Open with feh (or other image viewer)
+        vim.notify("Opening image with feh: " .. full_filepath, vim.log.levels.INFO)
+        vim.fn.jobstart("feh " .. vim.fn.shellescape(full_filepath), { detach = true })
+    elseif vim.fn.filereadable(full_filepath) == 1 then
+        -- Open in Neovim
+        vim.notify("Opening file in Neovim: " .. full_filepath, vim.log.levels.INFO)
+        vim.cmd("edit " .. vim.fn.fnameescape(full_filepath))
+    else
+        -- Fallback: copy the string to system clipboard if not a readable file and not an image
+        vim.notify("File not found or not readable. Copying path to clipboard: " .. filepath, vim.log.levels.INFO)
+        vim.fn.setreg("+", filepath)
+    end
+end, { noremap = true, silent = true, desc = "Open file/image if selected text is a valid path, else copy it" })
 
 -- ## ------------------------------ ##
 -- ## xxxx

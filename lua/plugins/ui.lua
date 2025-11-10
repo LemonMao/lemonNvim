@@ -640,9 +640,128 @@ vim.cmd([[
 ]])
 
 -- ##################
--- ## which-key
+-- ## render markdown
+-- ##################
+-- Configuration help:
+-- https://github.com/MeanderingProgrammer/render-markdown.nvim/wiki
+require('render-markdown').setup({
+    render_modes = true, --{ 'n', 'c', 't' },
+    anti_conceal = {
+        enabled = false,
+    },
+    heading = {
+        -- Useful context to have when evaluating values.
+        -- | level    | the number of '#' in the heading marker         |
+        -- | sections | for each level how deeply nested the heading is |
+
+        -- Turn on / off heading icon & background rendering.
+        enabled = true,
+        -- Additional modes to render headings.
+        render_modes = false,
+        -- Turn on / off atx heading rendering.
+        atx = true,
+        -- Turn on / off setext heading rendering.
+        setext = true,
+        -- Turn on / off any sign column related rendering.
+        sign = false,
+        -- Replaces '#+' of 'atx_h._marker'.
+        -- Output is evaluated depending on the type.
+        -- | function | `value(context)`              |
+        -- | string[] | `cycle(value, context.level)` |
+        icons = { '󰇊', '󰇋', '󰇌', '󰇍', '󰇎', '󰇏' },
+        -- icons = { ' ', ' ', ' ', ' ', ' ', ' ' },
+        -- icons = { '󰲡 ', '󰲣 ', '󰲥 ', '󰲧 ', '󰲩 ', '󰲫 ' },
+        -- Determines how icons fill the available space.
+        -- | right   | '#'s are concealed and icon is appended to right side                          |
+        -- | inline  | '#'s are concealed and icon is inlined on left side                            |
+        -- | overlay | icon is left padded with spaces and inserted on left hiding any additional '#' |
+        position = 'right',
+        -- Added to the sign column if enabled.
+        -- Output is evaluated by `cycle(value, context.level)`.
+        signs = { '󰫎 ' },
+        -- Width of the heading background.
+        -- | block | width of the heading text |
+        -- | full  | full width of the window  |
+        -- Can also be a list of the above values evaluated by `clamp(value, context.level)`.
+        width = 'full',
+        -- Amount of margin to add to the left of headings.
+        -- Margin available space is computed after accounting for padding.
+        -- If a float < 1 is provided it is treated as a percentage of available window space.
+        -- Can also be a list of numbers evaluated by `clamp(value, context.level)`.
+        left_margin = 0,
+        -- Amount of padding to add to the left of headings.
+        -- Output is evaluated using the same logic as 'left_margin'.
+        left_pad = 0,
+        -- Amount of padding to add to the right of headings when width is 'block'.
+        -- Output is evaluated using the same logic as 'left_margin'.
+        right_pad = 0,
+        -- Minimum width to use for headings when width is 'block'.
+        -- Can also be a list of integers evaluated by `clamp(value, context.level)`.
+        min_width = 0,
+        -- Determines if a border is added above and below headings.
+        -- Can also be a list of booleans evaluated by `clamp(value, context.level)`.
+        border = true,
+        -- Always use virtual lines for heading borders instead of attempting to use empty lines.
+        border_virtual = false,
+        -- Highlight the start of the border using the foreground highlight.
+        border_prefix = false,
+        -- Used above heading for border.
+        above = '▄',
+        -- Used below heading for border.
+        below = '▀',
+    },
+    code = {
+        -- Turn on / off code block & inline code rendering.
+        enabled = true,
+        -- Additional modes to render code blocks.
+        render_modes = false,
+    },
+
+})
+
+-- ##################
+-- ## Image
 -- ##################
 --
+--[[ require("image").setup({ ]]
+  --[[ backend = "kitty", -- or "ueberzug" or "sixel" ]]
+  --[[ processor = "magick_cli", -- or "magick_rock" ]]
+  --[[ integrations = { ]]
+  --[[   markdown = { ]]
+  --[[     enabled = true, ]]
+  --[[     clear_in_insert_mode = false, ]]
+  --[[     download_remote_images = true, ]]
+  --[[     only_render_image_at_cursor = true, ]]
+  --[[     only_render_image_at_cursor_mode = "popup", -- or "inline" ]]
+  --[[     floating_windows = false, -- if true, images will be rendered in floating markdown windows ]]
+  --[[     filetypes = { "markdown", "vimwiki" }, -- markdown extensions (ie. quarto) can go here ]]
+  --[[   }, ]]
+  --[[   neorg = { ]]
+  --[[     enabled = true, ]]
+  --[[     filetypes = { "norg" }, ]]
+  --[[   }, ]]
+  --[[   typst = { ]]
+  --[[     enabled = true, ]]
+  --[[     filetypes = { "typst" }, ]]
+  --[[   }, ]]
+  --[[   html = { ]]
+  --[[     enabled = false, ]]
+  --[[   }, ]]
+  --[[   css = { ]]
+  --[[     enabled = false, ]]
+  --[[   }, ]]
+  --[[ }, ]]
+  --[[ max_width = nil, ]]
+  --[[ max_height = nil, ]]
+  --[[ max_width_window_percentage = nil, ]]
+  --[[ max_height_window_percentage = 50, ]]
+  --[[ scale_factor = 1.0, ]]
+  --[[ window_overlap_clear_enabled = false, -- toggles images when windows are overlapped ]]
+  --[[ window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "snacks_notif", "scrollview", "scrollview_sign" }, ]]
+  --[[ editor_only_render_when_focused = false, -- auto show/hide images when the editor gains/looses focus ]]
+  --[[ tmux_show_only_in_active_window = false, -- auto show/hide images in the correct Tmux window (needs visual-activity off) ]]
+  --[[ hijack_file_patterns = { "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.avif" }, -- render image files as images when opened ]]
+--[[ }) ]]
 -- ##################
 -- ##
 -- ##################
