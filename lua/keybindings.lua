@@ -279,9 +279,12 @@ local function search_man_pages_with_cursor_word()
     require('telescope.builtin').man_pages({ sections = {'ALL'}, default_text = word })
 end
 
-
-
-
+-- Function to toggle multiple buffer groups
+local function toggle_multiple_buffer_groups()
+    vim.cmd('BufferLineGroupToggle Term')
+    vim.cmd('BufferLineGroupToggle Docs')
+    vim.cmd('BufferLineGroupToggle Logs')
+end
 
 -- ## -------------------------------------- ##
 -- ## F1 ~~ F12 Hotkeys
@@ -325,7 +328,7 @@ map({'n', 't', 'v'}, '<A-r>', '<C-\\><C-n>:BufferLineMoveNext<CR>:BufferLineMove
 map({'n', 't', 'v'}, "<A-n>", "<C-\\><C-n>:BufferLineMoveNext<CR>", { desc = "Bufferline: Move current buffer to next location"})
 map({'n', 't', 'v'}, "<A-p>", "<C-\\><C-n>:BufferLineMovePrev<CR>", { desc = "Bufferline: Move current buffer to previous location"})
 map({'n', 't', 'v'}, "<A-w>", close_empty_and_current_buffers, { desc = "Bufferline: Close empty buffers"})
-map({'n', 't', 'v'}, '<A-T>', '<C-\\><C-n><Cmd>BufferLineGroupToggle Term<CR>', { desc = "Bufferline: Toggle group"})
+map({'n', 't', 'v'}, '<A-T>', toggle_multiple_buffer_groups, { desc = "Bufferline: Toggle Term, Docs, and Logs groups"})
 map({'n', 't', 'v'}, "<A-e>", "<C-\\><C-n>:b# <CR>", { desc = "Bufferline: Switch to recent buffer" })
 map({'n', 't', 'v'}, '<A-1>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 1<CR>', { desc = "Bufferline: Switch to buffer with number"})
 map({'n', 't', 'v'}, '<A-2>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 2<CR>', { desc = "Bufferline: Switch to buffer with number"})

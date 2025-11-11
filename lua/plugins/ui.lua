@@ -647,7 +647,31 @@ vim.cmd([[
 require('render-markdown').setup({
     render_modes = true, --{ 'n', 'c', 't' },
     anti_conceal = {
-        enabled = false,
+        -- This enables hiding any added text on the line the cursor is on.
+        enabled = true,
+        -- Which elements to always show, ignoring anti conceal behavior. Values can either be
+        -- booleans to fix the behavior or string lists representing modes where anti conceal
+        -- behavior will be ignored. Valid values are:
+        --   head_icon, head_background, head_border, code_language, code_background, code_border,
+        --   dash, bullet, check_icon, check_scope, quote, table_border, callout, link, sign
+        ignore = {
+            -- true means render it
+            head_icon = true,
+            head_background = true,
+            head_border = true,
+            code_language = false,
+            code_background = true,
+            code_border = false,
+            dash = true,
+            bullet = true,
+            check_icon = true,
+            check_scope = true,
+            quote = true,
+            table_border = true,
+            callout = true,
+            link = true,
+            sign = true,
+        },
     },
     heading = {
         -- Useful context to have when evaluating values.
@@ -657,7 +681,7 @@ require('render-markdown').setup({
         -- Turn on / off heading icon & background rendering.
         enabled = true,
         -- Additional modes to render headings.
-        render_modes = false,
+        render_modes = true,
         -- Turn on / off atx heading rendering.
         atx = true,
         -- Turn on / off setext heading rendering.

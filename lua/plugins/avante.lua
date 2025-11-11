@@ -260,7 +260,8 @@ avanteOpts.opts = {
             description = "Explain the summary of code",
             details = "Explain the summary of code",
             prompt = "Work as a professional programmer to explain the selected code. " ..
-                    "At last provide a summary description/explaination of 'What is the module used for?Why design that?Use an example to illustrate the workflow of it.'. " ..
+                    "Provide a summary description/explaination of 'What is the module used for?Why design that?Use an example to illustrate the workflow of it.'. " ..
+                    "The summary should include each important steps in it." ..
                     "Respond in Chinese."
         },
         {
