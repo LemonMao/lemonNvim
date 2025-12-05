@@ -345,7 +345,7 @@ map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
 map("t", "<C-u>", "<C-\\><C-n><C-u>", { desc = "Exit terminal mode and scroll up page"})
 -- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})
 map({'n', 't', 'v'}, '<leader>tv', '<C-\\><C-n><Cmd>vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
-map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR>', { desc = "Open terminal in vertical split" })
+map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR><Cmd>BufferLineMoveNext<CR><Cmd>BufferLineMovePrev<CR>', { desc = "Open terminal in vertical split" })
 
 -- ## ------------------------------ ##
 -- ## AI
@@ -448,7 +448,7 @@ map('n', 'sp', '"+p', { desc = "Paste from system clipboard" })
 map('x', 'sy', '"+y', { desc = "Copy to system clipboard" })
 map('x', 'sp', '"+p', { desc = "Paste from system clipboard" })
 map('n', '<C-a>', 'ggVG', { desc = "Select all the content of current buffer" })
-map('x', '<C-c>', '"+y', { desc = "Copy to  system clipboard" })
+map('x', '<C-c>', '"+y""y', { desc = "Copy to system clipboard and nvim internal clipboard" })
 map('i', '<C-v>', '"+p', { desc = "Paste from system clipboard" })
 vim.keymap.set('n', 'yp', copy_path_to_clip, { desc = "Copy Relative Directory Path to Clipboard" })
 

@@ -931,7 +931,7 @@ vim.keymap.set(
 )
 vim.keymap.set(
     { "n", "v" },
-    "<leader>ae",
+    "<leader>ea",
     ai_explain_avante,
     { noremap = true, silent = true, desc = "Avante: Explain code." }
 )

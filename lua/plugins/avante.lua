@@ -1,5 +1,16 @@
 local avanteOpts = {}
+local function read_file(path)
+    local file = io.open(path, "r")
+    if file then
+        local content = file:read("*a")
+        file:close()
+        return content
+    end
+    return nil -- 或者抛出错误，取决于您的需求
+end
+
 avanteOpts.opts = {
+    -- History location: .local/state/nvim/avante/
     -- @alias avante.Mode "agentic" | "legacy"
     mode = "legacy",
     auto_suggestions_provider = "gemini_flash",
@@ -13,6 +24,12 @@ avanteOpts.opts = {
     -- provider = "gemini_flash",
     provider = "gemini",
     providers = {
+        --[[ Gemini Rate limit
+       [     Model          	RPM TPM 	RPD
+       [     Gemini 2.5 Pro 	2 	125k 	50
+       [     Gemini 2.5 Flash 	10 	250k 	250
+       [  Gemini 2.5 Flash-Lite 15 	250k 	1,000
+       ]]
         gemini = {
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
             model = "gemini-2.5-pro", -- The Gemini model to use (e.g., "gemini-2.0-flash").
@@ -42,10 +59,9 @@ avanteOpts.opts = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
-            -- model = "deepseek-chat",
             model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
-            disable_tools = true,
+            disable_tools = false,
             extra_request_body = {
                 temperature = 0.20,
                 max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
@@ -58,16 +74,15 @@ avanteOpts.opts = {
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
             model = "deepseek-chat",
-            -- model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
-            max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
             disable_tools = false,
-            extra_request_body = {
-                temperature = 0.20,
-                max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
-                max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
-                reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
-            },
+            --[[
+               [ extra_request_body = {
+               [     temperature = 0.20,
+               [     max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
+               [     max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
+               [ },
+               ]]
         },
     },
     web_search_engine = {
@@ -240,11 +255,70 @@ avanteOpts.opts = {
         exclude_auto_select = { "NvimTree" },
     },
     shortcuts = {
+        -- Roles
         {
-            name = "refactor",
-            description = "Refactor code with best practices",
-            details = "Automatically refactor code to improve readability, maintainability, and follow best practices while preserving functionality",
-            prompt = "Please refactor the selected code following best practices, improving readability and maintainability while preserving functionality."
+            name = "role_cpp",
+            description = "Work as a professional CPP language programmer",
+            details = "Work as a professional CPP language programmer",
+            prompt = (function()
+                local content = read_file("/home/lemon/.vim/AI/agents/cpp_pro.md")
+                return "Work as a professional CPP programmer as below." .. content .. "\n"
+            end)()
+        },
+        {
+            name = "role_c",
+            description = "Work as a professional C language programmer",
+            details = "Work as a professional C programmer",
+            prompt = (function()
+                local content = read_file("/home/lemon/.vim/AI/agents/c_pro.md")
+                return "Work as a professional C language programmer as below." .. content .. "\n"
+            end)()
+        },
+        {
+            name = "role_python",
+            description = "Work as a professional Python language programmer",
+            details = "Work as a professional Python programmer",
+            prompt = (function()
+                local content = read_file("/home/lemon/.vim/AI/agents/python_pro.md")
+                return "Work as a professional Python language programmer as below." .. content .. "\n"
+            end)()
+        },
+        {
+            name = "role_analyzer",
+            description = "Work as a professional analyzer",
+            details = "Work as a professional analyzer",
+            prompt = (function()
+                local content = read_file("/home/lemon/.vim/AI/agents/analyzer.md")
+                return "Work as a professional analyzer as below." .. content .. "\n"
+            end)()
+        },
+        {
+            name = "role_docarchitect",
+            description = "Work as a professional doc architect",
+            details = "Work as a professional doc architect",
+            prompt = (function()
+                local content = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
+                return "Work as a professional doc architect as below." .. content .. "\n"
+            end)()
+        },
+        {
+            name = "role_reviewer",
+            description = "Work as a professional reviewer",
+            details = "Work as a professional reviewer",
+            prompt = (function()
+                local content = read_file("/home/lemon/.vim/AI/agents/reviewer.md")
+                return "Work as a professional reviewer as below." .. content .. "\n"
+            end)()
+        },
+        -- Code
+        {
+            name = "modify_code",
+            description = "Modify or complete the code with best practices",
+            details = "Modify or complete the code with best practices",
+            prompt = "Please modify or complete the selected code as following requirements:\n" ..
+                "1. Following best practices, improving readability and maintainability while preserving functionality.\n" ..
+                "2. Dont explain. Just give the code. But needs neccesarry in-line code comment.\n" ..
+                "3. Follow other requirements as below: "
         },
         {
             name = "explain_code",
@@ -256,52 +330,55 @@ avanteOpts.opts = {
                     "Respond in Chinese."
         },
         {
-            name = "explain_2code",
-            description = "Explain the summary of code",
-            details = "Explain the summary of code",
-            prompt = "Work as a professional programmer to explain the selected code. " ..
-                    "Provide a summary description/explaination of 'What is the module used for?Why design that?Use an example to illustrate the workflow of it.'. " ..
+            name = "review_code",
+            description = "Review the code",
+            details = "Review the code",
+            prompt = (function()
+                local file = io.open("/home/lemon/.vim/AI/agents/reviewer.md", "r")
+                local content = file:read("*a")
+                file:close()
+                return "Work as a professional programmer as below:\n```\n" .. content .. "\n```\n" ..
+                    "Please note:" ..
+                    "1. You should review the selected code or target files user provides." ..
+                    "2. Respond in Chinese in all chat." ..
+                    "3. Follow other requirements as below:"
+            end)()
+        },
+        -- common
+        {
+            name = "explain_simple",
+            description = "Explain the target simply",
+            details = "Explain the target simply",
+            prompt = "Work as a professional software engineer to explain the target. If there's no target provided, use the selected code." ..
+                    "Provide a summary description/explaination of 'What is it? What is it used for? Why design that? Use an example to illustrate the workflow of it.'. " ..
                     "The summary should include each important steps in it." ..
-                    "Respond in Chinese."
+                    "Respond in Chinese in all chat."
         },
         {
-            name = "explain_example",
-            description = "Explain the code with example",
-            details = "Explain the code with example",
-            prompt = "Work as a professional programmer to explain the selected code. " ..
-                    "First, provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
-                    "At last provide a summary description/explaination. " ..
-                    "Always respond in Chinese. Give examples to illustrate the concept."
-        },
-        {
-            name = "explain_concept",
-            description = "Explain the concept of module",
-            details = "Explain the concept of module",
-            prompt = "Work as a professional software architect to explain the concept of module. I want to know: \n" ..
-                    "- What is the module used for? \n" ..
+            name = "explain_detail",
+            description = "Explain the concept of target detaily",
+            details = "Explain the concept of target detaily",
+            prompt = "Work as a professional software engineer to explain the concept of target user provides. I want to know: \n" ..
+                    "- What is it used for? \n" ..
                     "- Why design that? \n" ..
-                    "- What's the important components in this module? How to use them?\n" ..
+                    "- What's the important components in it? How to use them?\n" ..
                     "  You should list the strcutre and comment for the important member variable.\n" ..
                     "- How does it work with other modules? \n" ..
-                    "- Use an example to illustrate the workflow of it. \n" ..
-                    "Always respond in Chinese. The module is: "
+                    "- Use an example to illustrate the workflow of it.\n" ..
+                    "- If there's no target provided, use the selected code.\n" ..
+                    "Always respond in Chinese. The target is: "
         },
         {
-            name = "analyze",
-            description = "Analyze what happened",
-            details = "Analyze what happened",
-            prompt = "Work as a professional software architect to analyze what happened based on the information."..
+            name = "analyze_issue",
+            description = "Analyze the issue",
+            details = "Analyze the issue",
+            prompt = "Work as a professional software architect to analyze the issue."..
                 " I want to know: \n" ..
                 "- What happened here? \n" ..
                 "- The rootcause. \n" ..
                 "- If you cannot find the rootcause. Image one situation will cause it.\n" ..
-                "Always respond in Chinese. The module is: "
-        },
-        {
-            name = "complete",
-            description = "Complete the code",
-            details = "Complete the code with readability, maintainability, and follow best practices while preserving functionality",
-            prompt = "Please complete the selected code following best practices, improving readability and maintainability while preserving functionality. Answer in Chinse."
+                "- The possible solution.\n" ..
+                "Always respond in Chinese. The issue is: "
         },
         {
             name = "chinese",
@@ -309,15 +386,7 @@ avanteOpts.opts = {
             details = "Answer in Chinse",
             prompt = "Always respond in Chinese in all chat."
         },
-        {
-            name = "example",
-            description = "Give examples to illustrate the concept",
-            details = "Give examples to illustrate the concept",
-            prompt = "Give examples to illustrate the concept of specified code.\n " ..
-                "- How to use it?\n" ..
-                "- Why design that?\n" ..
-                "Always respond in Chinese.The specifed code is:\n"
-        },
+
         -- Add more custom shortcuts...
     }
 }
