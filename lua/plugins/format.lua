@@ -23,6 +23,7 @@ conform.setup({
     -- have other formatters configured.
     ["_"] = { "trim_whitespace" },
   },
+  log_level = vim.log.levels.DEBUG,
   -- The options you set here will be merged with the builtin formatters.
   -- You can also define any custom formatters here.
   formatters = {

@@ -55,13 +55,14 @@ avanteOpts.opts = {
                 },
             },
         },
+        -- 100k 0.2Y
         deepseek_r = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
             model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
-            disable_tools = false,
+            disable_tools = true,
             extra_request_body = {
                 temperature = 0.20,
                 max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
@@ -313,8 +314,8 @@ avanteOpts.opts = {
         -- Code
         {
             name = "modify_code",
-            description = "Modify or complete the code with best practices",
-            details = "Modify or complete the code with best practices",
+            description = "Modify or complete the code with requirements",
+            details = "Modify or complete the code with requirements",
             prompt = "Please modify or complete the selected code as following requirements:\n" ..
                 "1. Following best practices, improving readability and maintainability while preserving functionality.\n" ..
                 "2. Dont explain. Just give the code. But needs neccesarry in-line code comment.\n" ..
@@ -322,26 +323,27 @@ avanteOpts.opts = {
         },
         {
             name = "explain_code",
-            description = "Explain the code",
-            details = "Explain the code",
+            description = "Explain the code with requirements",
+            details = "Explain the code with requirements",
             prompt = "Work as a professional programmer to explain the selected code. " ..
                     "First, provide a detailed, code-level description/explaination, similar to adding comments to code. " ..
                     "At last provide a summary description/explaination of 'What is the module used for?Why design that?Use an example to illustrate the workflow of it.'. " ..
-                    "Respond in Chinese."
+                    "Respond in Chinese. Follow other requirements as below: "
         },
         {
             name = "review_code",
-            description = "Review the code",
-            details = "Review the code",
+            description = "Review the code with requirements",
+            details = "Review the code with requirements",
             prompt = (function()
                 local file = io.open("/home/lemon/.vim/AI/agents/reviewer.md", "r")
                 local content = file:read("*a")
                 file:close()
                 return "Work as a professional programmer as below:\n```\n" .. content .. "\n```\n" ..
                     "Please note:" ..
-                    "1. You should review the selected code or target files user provides." ..
-                    "2. Respond in Chinese in all chat." ..
-                    "3. Follow other requirements as below:"
+                    "1. If user provides the selected code, just review this part coe don't touch others.\n" ..
+                    "2. If user doesn't provide the selected code, review the whole file.\n" ..
+                    "3. Respond in Chinese in all chat." ..
+                    "4. Follow other requirements as below:"
             end)()
         },
         -- common
@@ -370,8 +372,8 @@ avanteOpts.opts = {
         },
         {
             name = "analyze_issue",
-            description = "Analyze the issue",
-            details = "Analyze the issue",
+            description = "Analyze the issue as below",
+            details = "Analyze the issue as below",
             prompt = "Work as a professional software architect to analyze the issue."..
                 " I want to know: \n" ..
                 "- What happened here? \n" ..

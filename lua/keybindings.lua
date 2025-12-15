@@ -327,6 +327,8 @@ map("t", "<A-l>", "<C-\\><C-n>:BufferLineCycleNext<CR>", { desc = "Bufferline: S
 map({'n', 't', 'v'}, '<A-r>', '<C-\\><C-n>:BufferLineMoveNext<CR>:BufferLineMovePrev<CR>', { desc = "Bufferline: Refresh senquence"})
 map({'n', 't', 'v'}, "<A-n>", "<C-\\><C-n>:BufferLineMoveNext<CR>", { desc = "Bufferline: Move current buffer to next location"})
 map({'n', 't', 'v'}, "<A-p>", "<C-\\><C-n>:BufferLineMovePrev<CR>", { desc = "Bufferline: Move current buffer to previous location"})
+map({'n', 't', 'v'}, '<A-k>', '<C-\\><C-n>:lua require\'bufferline\'.move_to(-1)<CR>', { desc = "Bufferline: Move current buffer to last location"})
+map({'n', 't', 'v'}, '<A-j>', '<C-\\><C-n>:lua require\'bufferline\'.move_to(1)<CR>', { desc = "Bufferline: Move current buffer to first location"})
 map({'n', 't', 'v'}, "<A-w>", close_empty_and_current_buffers, { desc = "Bufferline: Close empty buffers"})
 map({'n', 't', 'v'}, '<A-T>', toggle_multiple_buffer_groups, { desc = "Bufferline: Toggle Term, Docs, and Logs groups"})
 map({'n', 't', 'v'}, "<A-e>", "<C-\\><C-n>:b# <CR>", { desc = "Bufferline: Switch to recent buffer" })
@@ -345,7 +347,7 @@ map('t', '<Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
 map("t", "<C-u>", "<C-\\><C-n><C-u>", { desc = "Exit terminal mode and scroll up page"})
 -- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})
 map({'n', 't', 'v'}, '<leader>tv', '<C-\\><C-n><Cmd>vsp | terminal<CR>', { desc = "Open terminal in vertical split" })
-map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR><Cmd>BufferLineMoveNext<CR><Cmd>BufferLineMovePrev<CR>', { desc = "Open terminal in vertical split" })
+map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR><Cmd>BufferLineMovePrev<CR><Cmd>BufferLineMoveNext<CR>', { desc = "Open terminal in vertical split" })
 
 -- ## ------------------------------ ##
 -- ## AI
