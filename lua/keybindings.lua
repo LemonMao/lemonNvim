@@ -327,8 +327,8 @@ map("t", "<A-l>", "<C-\\><C-n>:BufferLineCycleNext<CR>", { desc = "Bufferline: S
 map({'n', 't', 'v'}, '<A-r>', '<C-\\><C-n>:BufferLineMoveNext<CR>:BufferLineMovePrev<CR>', { desc = "Bufferline: Refresh senquence"})
 map({'n', 't', 'v'}, "<A-n>", "<C-\\><C-n>:BufferLineMoveNext<CR>", { desc = "Bufferline: Move current buffer to next location"})
 map({'n', 't', 'v'}, "<A-p>", "<C-\\><C-n>:BufferLineMovePrev<CR>", { desc = "Bufferline: Move current buffer to previous location"})
-map({'n', 't', 'v'}, '<A-k>', '<C-\\><C-n>:lua require\'bufferline\'.move_to(-1)<CR>', { desc = "Bufferline: Move current buffer to last location"})
-map({'n', 't', 'v'}, '<A-j>', '<C-\\><C-n>:lua require\'bufferline\'.move_to(1)<CR>', { desc = "Bufferline: Move current buffer to first location"})
+map({'n', 't', 'v'}, '<A-N>', '<C-\\><C-n>:lua require\'bufferline\'.move_to(-1)<CR>', { desc = "Bufferline: Move current buffer to last location"})
+map({'n', 't', 'v'}, '<A-P>', '<C-\\><C-n>:lua require\'bufferline\'.move_to(1)<CR>', { desc = "Bufferline: Move current buffer to first location"})
 map({'n', 't', 'v'}, "<A-w>", close_empty_and_current_buffers, { desc = "Bufferline: Close empty buffers"})
 map({'n', 't', 'v'}, '<A-T>', toggle_multiple_buffer_groups, { desc = "Bufferline: Toggle Term, Docs, and Logs groups"})
 map({'n', 't', 'v'}, "<A-e>", "<C-\\><C-n>:b# <CR>", { desc = "Bufferline: Switch to recent buffer" })
@@ -518,90 +518,4 @@ map("n", "<leader>=", ':lua require("conform").format({aysnc = true})<CR>', { de
 map('x', '<leader>=', ':<C-U>Format<CR>', { desc = "Format code for block" })
 map('v', '<leader>=j', ':!jq .<CR>', { desc = "Format json code for block" })
 --
--- complete nvim-cmp
-pluginKeys.cmp = function(cmp, luasnip)
-    local feedkey = function(key, mode)
-        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(key, true, true, true), mode, true)
-    end
-
-    local has_words_before = function()
-        local line, col = unpack(vim.api.nvim_win_get_cursor(0))
-        return col ~= 0 and vim.api.nvim_buf_get_lines(0, line - 1, line, true)[1]:sub(col, col):match("%s") == nil
-    end
-
-    return {
-        -- 出现补全
-        ["<A-.>"] = cmp.mapping(cmp.mapping.complete(), {"i", "c"}),
-        -- 取消
-        ["<A-,>"] = cmp.mapping({
-            i = cmp.mapping.abort(),
-            c = cmp.mapping.close()
-        }),
-        ["<C-p>"] = cmp.mapping.select_prev_item(),
-        ["<C-n>"] = cmp.mapping.select_next_item(),
-        -- ["<CR>"] = cmp.mapping.confirm({
-        --     select = true,
-        --     behavior = cmp.ConfirmBehavior.Replace
-        -- }),
-        ["<C-u>"] = cmp.mapping(cmp.mapping.scroll_docs(-4), {"i", "c"}),
-        ["<C-d>"] = cmp.mapping(cmp.mapping.scroll_docs(4), {"i", "c"}),
-
-        -- LuaSnip Super Tab
-        ['<CR>'] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-                if luasnip.expandable() then
-                    luasnip.expand()
-                else
-                    cmp.confirm({
-                        select = true,
-                    })
-                end
-            else
-                fallback()
-            end
-        end),
-
-        ["<Tab>"] = cmp.mapping(function(fallback)
-            if luasnip.locally_jumpable(1) then
-                luasnip.jump(1)
-            elseif cmp.visible() then
-                cmp.select_next_item()
-            else
-                fallback()
-            end
-        end, { "i", "s" }),
-
-        ["<S-Tab>"] = cmp.mapping(function(fallback)
-            if luasnip.locally_jumpable(-1) then
-                luasnip.jump(-1)
-            elseif cmp.visible() then
-                cmp.select_prev_item()
-            else
-                fallback()
-            end
-        end, { "i", "s" }),
-
-
-        -- Vsnip Super Tab
-        -- ["<Tab>"] = cmp.mapping(function(fallback)
-        --   if cmp.visible() then
-        --     cmp.select_next_item()
-        --   elseif vim.fn["vsnip#available"](1) == 1 then
-        --     feedkey("<Plug>(vsnip-expand-or-jump)", "")
-        --   elseif has_words_before() then
-        --     cmp.complete()
-        --   else
-        --     fallback() -- The fallback function sends a already mapped key. In this case, it's probably `<Tab>`.
-        --   end
-        -- end, {"i", "s"}),
-        -- ["<S-Tab>"] = cmp.mapping(function()
-        --   if cmp.visible() then
-        --     cmp.select_prev_item()
-        --   elseif vim.fn["vsnip#jumpable"](-1) == 1 then
-        --     feedkey("<Plug>(vsnip-jump-prev)", "")
-        --   end
-        -- end, {"i", "s"})
-    }
-end
-
 return pluginKeys

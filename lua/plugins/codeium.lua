@@ -9,9 +9,10 @@
 codeiumOpts = {
     -- Optionally disable cmp source if using virtual text only
     enable_cmp_source = false,
-    enterprise_mode = true,
     enable_chat = false,
 
+    -- remove if not use enterprise_mode
+    enterprise_mode = true,
     api = {
         -- the hostname. Example: "codeium.example.com". Required when using enterprise mode
         host = "codeium.delllabs.net",
@@ -29,7 +30,7 @@ codeiumOpts = {
         -- These are the defaults
 
         -- Set to true if you never want completions to be shown automatically.
-        manual = false,
+        manual = true,
         -- A mapping of filetype to true or false, to enable virtual text.
         filetypes = {},
         -- Whether to enable virtual text of not for filetypes not specifically listed above.
@@ -54,17 +55,17 @@ codeiumOpts = {
         -- Key bindings for managing completions in virtual text mode.
         key_bindings = {
             -- Accept the current completion.
-            accept = "<C-k>",
+            accept = "<Tab>",
             -- Accept the next word.
             accept_word = false,
             -- Accept the next line.
             accept_line = false,
             -- Clear the virtual text.
-            clear = false,
+            clear = "<S-Tab>",
             -- Cycle to the next completion.
-            next = "<C-n>",
+            next = "<M-]>",
             -- Cycle to the previous completion.
-            prev = "<C-p>",
+            prev = "<M-[>",
         }
     },
     workspace_root = {
@@ -73,6 +74,7 @@ codeiumOpts = {
         paths = {
             ".git",
             ".svn",
+            ".root",
         },
     },
 }
@@ -96,4 +98,7 @@ codeiumOpts = {
 --     require('lualine').refresh()
 -- end)
 
--- require("codeium").setup(codeiumOpts)
+require("codeium").setup(codeiumOpts)
+require('codeium.virtual_text').set_statusbar_refresh(function()
+	require('lualine').refresh()
+end)

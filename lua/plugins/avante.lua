@@ -13,7 +13,7 @@ avanteOpts.opts = {
     -- History location: .local/state/nvim/avante/
     -- @alias avante.Mode "agentic" | "legacy"
     mode = "legacy",
-    auto_suggestions_provider = "gemini_flash",
+    auto_suggestions_provider = "gemini_lite",
     -- claude = {
     --     endpoint = "https://api.anthropic.com",
     --     model = "claude-3-5-sonnet-20241022",
@@ -24,39 +24,34 @@ avanteOpts.opts = {
     -- provider = "gemini_flash",
     provider = "gemini",
     providers = {
-        --[[ Gemini Rate limit
-       [     Model          	RPM TPM 	RPD
-       [     Gemini 2.5 Pro 	2 	125k 	50
-       [     Gemini 2.5 Flash 	10 	250k 	250
-       [  Gemini 2.5 Flash-Lite 15 	250k 	1,000
-       ]]
         gemini = {
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models", -- The endpoint for the Gemini API.  Currently unused.
-            model = "gemini-2.5-pro", -- The Gemini model to use (e.g., "gemini-2.0-flash").
+            model = "gemini-3-flash-preview",
+            -- model = "gemini-2.5-pro", -- The Gemini model to use (e.g., "gemini-2.0-flash").
             -- model = "gemini-2.0-flash-thinking-exp",
             -- model = "gemini-2.5-flash",
             disable_tools = false,
             extra_request_body = {
                 max_tokens = 131072, -- The maximum number of tokens in the generated response.
                 generationConfig = {
-                    temperature = 0.25,
+                    temperature = 0.1,
                 },
             },
         },
-        gemini_flash = {
+        gemini_lite = {
             __inherited_from = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-            model = "gemini-2.5-flash",
+            model = "gemini-2.5-flash-lite",
             disable_tools = false,
             extra_request_body = {
                 max_tokens = 131072, -- 128k, maximum number of tokens in the generated response.
                 generationConfig = {
-                    temperature = 0.25,
+                    temperature = 0.1,
                 },
             },
         },
         -- 100k 0.2Y
-        deepseek_r = {
+        dp_r = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
@@ -64,26 +59,19 @@ avanteOpts.opts = {
             timeout = 30000, -- timeout in milliseconds
             disable_tools = true,
             extra_request_body = {
-                temperature = 0.20,
+                temperature = 0.1,
                 max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
                 max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
             },
         },
-        deepseek_v = {
+        dp_c = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
             model = "deepseek-chat",
             timeout = 30000, -- timeout in milliseconds
             disable_tools = false,
-            --[[
-               [ extra_request_body = {
-               [     temperature = 0.20,
-               [     max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
-               [     max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
-               [ },
-               ]]
         },
     },
     web_search_engine = {
