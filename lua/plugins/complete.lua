@@ -133,7 +133,7 @@ cmp.setup({
                 end
             end,
         }),
-        ['<C-;>'] = cmp.mapping(function(fallback)
+        ['<C-x>'] = cmp.mapping(function(fallback)
             if cmp.visible() then
                 cmp.abort()
                 require('codeium.virtual_text').cycle_or_complete()
