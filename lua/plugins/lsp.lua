@@ -5,11 +5,6 @@ if not mason_status then
   return
 end
 
-local nlsp_status, nvim_lsp = pcall(require, "lspconfig")
-if not nlsp_status then
-  vim.notify("Not find plugin lspconfig")
-  return
-end
 
 local mlsp_status, mason_lspconfig = pcall(require, "mason-lspconfig")
 if not mlsp_status then
@@ -88,7 +83,7 @@ mason.setup({
    ]]
 
 
-nvim_lsp.lua_ls.setup({
+vim.lsp.config('lua_ls', {
   capabilities = lsp_capabilities,
   on_attach = LspKeybind,
   on_init = function(client)
@@ -113,8 +108,9 @@ nvim_lsp.lua_ls.setup({
     return true
   end,
 })
+vim.lsp.enable('lua_ls')
 
-nvim_lsp.pylsp.setup{
+vim.lsp.config('pylsp', {
   capabilities = lsp_capabilities,
   on_attach = LspKeybind,
   settings = {
@@ -127,20 +123,21 @@ nvim_lsp.pylsp.setup{
       }
     }
   }
-}
+})
+vim.lsp.enable('pylsp')
 
 -- if want to make clangd to support c++20, create .clangd and add:
 -- CompileFlags:
 --   Add: [-std=c++20]
-nvim_lsp.clangd.setup{
+vim.lsp.config('clangd', {
   capabilities = lsp_capabilities,
   on_attach = LspKeybind,
-  mason = false,
   cmd = {
     'clangd',
     '--all-scopes-completion',
   },
-}
+})
+vim.lsp.enable('clangd')
 
 -- clangd-extenstion
 require("clangd_extensions").setup()

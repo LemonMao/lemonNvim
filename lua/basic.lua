@@ -70,6 +70,8 @@ vim.o.timeoutlen = 700
 -- split window 从下边和右边出现
 vim.o.splitbelow = true
 vim.o.splitright = true
+--  显示边框风格（如 `single`, `double`, `rounded`）
+vim.o.winborder = 'rounded'
 -- 自动补全不自动选中
 vim.g.completeopt = {'menu', 'menuone', 'noselect'}
 -- 样式
