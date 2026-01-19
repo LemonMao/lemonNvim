@@ -276,7 +276,7 @@ require("bufferline").setup({
         always_show_bufferline = true,
         auto_toggle_bufferline = true,
 
-        -- sort_by = 'id',
+        sort_by = 'id',
         -- Filename similarity sorting
 --[[
    [         sort_by = function(buffer_a, buffer_b)

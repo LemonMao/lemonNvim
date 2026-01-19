@@ -10,10 +10,10 @@ local function read_file(path)
 end
 
 local function AI_prompt(role, behavior, user_prompt)
-    local final_user_prompt = user_prompt or "User requirements is:"
+    local final_user_prompt = user_prompt or "\nUser requirements are:"
 
-    return "Work as role:\n```\n" .. (role or "") .. "\n```\n" ..
-        "Perform the behavior:\n```\n" .. (behavior or "") .. "\n```\n" ..
+    return "Work as role:\n" .. (role or "") .. "\n" ..
+        "Perform the behavior:\n" .. (behavior or "") .. "\n" ..
         final_user_prompt
 end
 
@@ -38,7 +38,8 @@ avanteOpts.opts = {
             -- model = "gemini-2.5-pro", -- The Gemini model to use (e.g., "gemini-2.0-flash").
             -- model = "gemini-2.0-flash-thinking-exp",
             -- model = "gemini-2.5-flash",
-            disable_tools = false,
+            -- disable_tools = false,
+            disable_tools = true,
             extra_request_body = {
                 max_tokens = 131072, -- The maximum number of tokens in the generated response.
                 generationConfig = {
@@ -50,7 +51,8 @@ avanteOpts.opts = {
             __inherited_from = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
             model = "gemini-2.5-flash-lite",
-            disable_tools = false,
+            -- disable_tools = false,
+            disable_tools = true,
             extra_request_body = {
                 max_tokens = 131072, -- 128k, maximum number of tokens in the generated response.
                 generationConfig = {
@@ -79,7 +81,7 @@ avanteOpts.opts = {
             endpoint = "https://api.deepseek.com",
             model = "deepseek-chat",
             timeout = 30000, -- timeout in milliseconds
-            disable_tools = false,
+            disable_tools = true,
         },
     },
     web_search_engine = {
@@ -326,7 +328,7 @@ avanteOpts.opts = {
             details = "Explain the code with requirements",
             prompt = (function()
                 local role = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
-                local behavior = "1. Provide detailed, code-level explaination, similar to in-line code comments.\n" ..
+                local behavior = "1. Provide detailed, code-level explaination, similar to in-line code comments for the selected code.\n" ..
                     "2. Provide a summary explaination of Why design that?\n" ..
                     "3. If user doesn't provide the selected code, explain the whole file.\n" ..
                     "4. Use an example to illustrate the workflow of it.\n" ..
@@ -348,8 +350,8 @@ avanteOpts.opts = {
         },
         {
             name = "plan_feature",
-            description = "Make plan how to implement the feature as requirements",
-            details = "Make plan how to implement the feature as requirements",
+            description = "Make plan how to implement the feature with requirements",
+            details = "Make plan how to implement the feature with requirements",
             prompt = (function()
                 local role = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
                 local behavior = read_file("/home/lemon/.vim/AI/commands/plan_feature.md")

@@ -3,19 +3,14 @@
 -- ## ------------------------------ ##
 vim.diagnostic.config({
     virtual_text = true,
-    signs = true,
+    signs = {
+        Error = { text = "", texthl = "DiagnosticSignError", numhl = "DiagnosticSignError" },
+        Warn = { text = "", texthl = "DiagnosticSignWarn", numhl = "DiagnosticSignWarn" },
+        Hint = { text = "󰌵", texthl = "DiagnosticSignHint", numhl = "DiagnosticSignHint" },
+        Info = { text = "", texthl = "DiagnosticSignInfo", numhl = "DiagnosticSignInfo" },
+    },
     update_in_insert = true,
 })
-
-local signs = { Error = "", Warn = "", Hint = "󰌵", Info = "" }
-for type, icon in pairs(signs) do
-    local hl = "DiagnosticSign" .. type
-    vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
-end
-for type, icon in pairs(signs) do
-    local hl = "DiagnosticSign" .. type
-    vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
-end
 
 -- Disable diagnostics globally by default
 -- vim.diagnostic.enable()
