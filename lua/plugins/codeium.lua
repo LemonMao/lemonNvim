@@ -79,26 +79,10 @@ codeiumOpts = {
     },
 }
 
--- Codeium Auto Toggle. It is enabled at NVIM launch. Use this command to toggle the
--- enable/disable for Codeium feature.
--- local codeium_config = require("codeium.config").options
--- vim.api.nvim_create_user_command('CodeiumToggle', function()
---     codeium_config.virtual_text.enabled = not codeium_config.virtual_text.enabled
---     require("codeium").setup(codeium_config)
---
---     if codeium_config.virtual_text.enabled then
---         vim.notify("Codeium enabled: ON", vim.log.levels.INFO, { title = "Codeium" })
---     else
---         vim.notify("Codeium enabled: OFF", vim.log.levels.INFO, { title = "Codeium" })
---     end
--- end, { desc = "Toggle Codeium" })
---
--- --
--- require('codeium.virtual_text').set_statusbar_refresh(function()
---     require('lualine').refresh()
--- end)
-
+-- Initialize Codeium plugin with configuration
 require("codeium").setup(codeiumOpts)
+
+-- Set up statusbar refresh for lualine integration
 require('codeium.virtual_text').set_statusbar_refresh(function()
-	require('lualine').refresh()
+    require('lualine').refresh()
 end)

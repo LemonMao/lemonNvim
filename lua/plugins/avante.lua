@@ -318,7 +318,10 @@ avanteOpts.opts = {
                 local role = read_file("/home/lemon/.vim/AI/agents/developer.md")
                 local behavior = "1. Modify or complete the code with best practices based on user requirements\n" ..
                 "2. Codes need neccesarry in-line code comment.\n" ..
-                "3. Explain why these suggestions are made, and the potential benefits and trade-offs."
+                "3. Explain why these suggestions are made, and the potential benefits and trade-offs.\n" ..
+                "   Just summarize explaination in a few sentences, no need to correspond one-to-one with the principle rules.\n" ..
+                "4. If there's no selected code, you should implement it as a feature for all files.\n"..
+                "5. Respond in Chinese in all chat."
                 return AI_prompt(role, behavior)
             end)()
         },
@@ -328,11 +331,13 @@ avanteOpts.opts = {
             details = "Explain the code with requirements",
             prompt = (function()
                 local role = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
-                local behavior = "1. Provide detailed, code-level explaination, similar to in-line code comments for the selected code.\n" ..
-                    "2. Provide a summary explaination of Why design that?\n" ..
-                    "3. If user doesn't provide the selected code, explain the whole file.\n" ..
-                    "4. Use an example to illustrate the workflow of it.\n" ..
-                    "5. Respond in Chinese in all chat."
+                local behavior = "1. The output format is:\n" ..
+                    "  - First, provide detailed, code-level explaination, similar to in-line code comments for the selected code.\n" ..
+                    "  - Second, Provide a summary explaination of 'Why design that? && What does thie part code do?\n" ..
+                    "  - Use an example to illustrate the workflow of it.\n" ..
+                    "  - Only output the above items. Don't output others.\n" ..
+                    "2. If user doesn't provide the selected code, explain the whole file.\n" ..
+                    "3. Respond in Chinese in all chat."
                 return AI_prompt(role, behavior)
             end)()
         },
