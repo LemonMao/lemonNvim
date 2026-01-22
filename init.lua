@@ -13,6 +13,7 @@ require("plugins.format")
 require("plugins.complete")
 require("plugins.coding")
 require("plugins.gtags")
+require("plugins.avante")
 require("plugins.async-run")
 
 -- Codeium / Windsurf

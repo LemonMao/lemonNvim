@@ -162,9 +162,9 @@ cmp.setup({
                 cmp.select_next_item()
             else
                 -- 使用 feedkeys 模拟原生 Tab 行为，绕过 nvim-cmp 在 NVIM 0.11 上的 fallback Bug
-                local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-                vim.api.nvim_feedkeys(termcode, "n", true)
-                -- fallback()
+                -- local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+                -- vim.api.nvim_feedkeys(termcode, "n", true)
+                fallback()
             end
         end, {"i", "s"}),
 
@@ -175,9 +175,9 @@ cmp.setup({
                 cmp.select_prev_item()
             else
                 -- 使用 feedkeys 模拟原生 Tab 行为，绕过 nvim-cmp 在 NVIM 0.11 上的 fallback Bug
-                local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-                vim.api.nvim_feedkeys(termcode, "n", true)
-                -- fallback()
+                -- local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+                -- vim.api.nvim_feedkeys(termcode, "n", true)
+                fallback()
             end
         end, {"i", "s"}),
     },

@@ -1,4 +1,7 @@
 local avanteOpts = {}
+-- AI 代理和命令的基础路径
+local ai_path = vim.fn.expand("~/.vim/AI")
+
 local function read_file(path)
     local file = io.open(path, "r")
     if file then
@@ -10,10 +13,15 @@ local function read_file(path)
 end
 
 local function AI_prompt(role, behavior, user_prompt)
-    local final_user_prompt = user_prompt or "\nUser requirements are:"
+    local system_prompt = read_file(ai_path .. "/agents/general.md")
+    if not system_prompt or system_prompt == "" then
+        system_prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出."
+    end
+    local final_user_prompt = user_prompt or "User requirements may be empty or as specified below."
 
-    return "Work as role:\n" .. (role or "") .. "\n" ..
-        "Perform the behavior:\n" .. (behavior or "") .. "\n" ..
+    return "Follow system rules in all sessions: " .. (system_prompt or "") .. "\n\n" ..
+        "Work as role:\n" .. (role or "") .. "\n\n" ..
+        "Perform the behavior:\n" .. (behavior or "") .. "\n\n" ..
         final_user_prompt
 end
 
@@ -253,14 +261,27 @@ avanteOpts.opts = {
         provider = "telescope",
         exclude_auto_select = { "NvimTree" },
     },
+    system_prompt = "YYYY",
     shortcuts = {
         -- Roles
+        {
+            name = "system_prompt",
+            description = "Apply system prompt for all sessions",
+            details = "Apply system prompt for all sessions",
+            prompt = (function()
+                local prompt = read_file(ai_path .. "/agents/general.md")
+                if not prompt or prompt == "" then
+                    prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出"
+                end
+                return prompt
+            end)()
+        },
         {
             name = "role_cpp",
             description = "Work as a professional CPP language programmer",
             details = "Work as a professional CPP language programmer",
             prompt = (function()
-                local content = read_file("/home/lemon/.vim/AI/agents/cpp_pro.md")
+                local content = read_file(ai_path .. "/agents/cpp_pro.md")
                 return "Work as a professional CPP programmer as below." .. content .. "\n"
             end)()
         },
@@ -269,7 +290,7 @@ avanteOpts.opts = {
             description = "Work as a professional C language programmer",
             details = "Work as a professional C programmer",
             prompt = (function()
-                local content = read_file("/home/lemon/.vim/AI/agents/c_pro.md")
+                local content = read_file(ai_path .. "/agents/c_pro.md")
                 return "Work as a professional C language programmer as below." .. content .. "\n"
             end)()
         },
@@ -278,7 +299,7 @@ avanteOpts.opts = {
             description = "Work as a professional Python language programmer",
             details = "Work as a professional Python programmer",
             prompt = (function()
-                local content = read_file("/home/lemon/.vim/AI/agents/python_pro.md")
+                local content = read_file(ai_path .. "/agents/python_pro.md")
                 return "Work as a professional Python language programmer as below." .. content .. "\n"
             end)()
         },
@@ -287,7 +308,7 @@ avanteOpts.opts = {
             description = "Work as a professional analyzer",
             details = "Work as a professional analyzer",
             prompt = (function()
-                local content = read_file("/home/lemon/.vim/AI/agents/analyzer.md")
+                local content = read_file(ai_path .. "/agents/analyzer.md")
                 return "Work as a professional analyzer as below." .. content .. "\n"
             end)()
         },
@@ -296,7 +317,7 @@ avanteOpts.opts = {
             description = "Work as a professional doc architect",
             details = "Work as a professional doc architect",
             prompt = (function()
-                local content = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
+                local content = read_file(ai_path .. "/agents/doc_architect.md")
                 return "Work as a professional doc architect as below." .. content .. "\n"
             end)()
         },
@@ -305,23 +326,25 @@ avanteOpts.opts = {
             description = "Work as a professional reviewer",
             details = "Work as a professional reviewer",
             prompt = (function()
-                local content = read_file("/home/lemon/.vim/AI/agents/reviewer.md")
+                local content = read_file(ai_path .. "/agents/reviewer.md")
                 return "Work as a professional reviewer as below." .. content .. "\n"
             end)()
         },
         -- Code
         {
             name = "modify_code",
-            description = "Modify or complete the code with requirements",
-            details = "Modify or complete the code with requirements",
+            description = "Modify or implement features with requirements",
+            details = "Modify selected code or implement features across files",
             prompt = (function()
-                local role = read_file("/home/lemon/.vim/AI/agents/developer.md")
-                local behavior = "1. Modify or complete the code with best practices based on user requirements\n" ..
-                "2. Codes need neccesarry in-line code comment.\n" ..
-                "3. Explain why these suggestions are made, and the potential benefits and trade-offs.\n" ..
-                "   Just summarize explaination in a few sentences, no need to correspond one-to-one with the principle rules.\n" ..
-                "4. If there's no selected code, you should implement it as a feature for all files.\n"..
-                "5. Respond in Chinese in all chat."
+                local role = read_file(ai_path .. "/agents/developer.md")
+                local behavior = "1. If code is selected, focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
+                "2. You must strictly provide the response in the following format:\n" ..
+                "## code change\n" ..
+                "[The modified or new code. Use necessary in-line English comments.]\n" ..
+                "## explaination\n" ..
+                "[A detail summary of the changes, benefits, and potential trade-offs.]\n" ..
+                "3. When implementing feature, if user doesn't provide requirements. Ask for it." ..
+                "4. Ensure the code follows best practices and the explanation is concise."
                 return AI_prompt(role, behavior)
             end)()
         },
@@ -330,14 +353,15 @@ avanteOpts.opts = {
             description = "Explain the code with requirements",
             details = "Explain the code with requirements",
             prompt = (function()
-                local role = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
-                local behavior = "1. The output format is:\n" ..
-                    "  - First, provide detailed, code-level explaination, similar to in-line code comments for the selected code.\n" ..
-                    "  - Second, Provide a summary explaination of 'Why design that? && What does thie part code do?\n" ..
-                    "  - Use an example to illustrate the workflow of it.\n" ..
-                    "  - Only output the above items. Don't output others.\n" ..
-                    "2. If user doesn't provide the selected code, explain the whole file.\n" ..
-                    "3. Respond in Chinese in all chat."
+                local role = read_file(ai_path .. "/agents/doc_architect.md")
+                local behavior = "1. Explan the selected code as following output:\n" ..
+                    "## Summary\n" ..
+                    "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+                    "## Code explain\n" ..
+                    "[Provide detailed, code-level explaination, similar to in-line code comments for the selected code]\n" ..
+                    "## Example\n" ..
+                    "[Use an example to illustrate the workflow of it or how to use it]\n" ..
+                    "2. If user doesn't provide the selected code, ask for it.\n"
                 return AI_prompt(role, behavior)
             end)()
         },
@@ -346,10 +370,9 @@ avanteOpts.opts = {
             description = "Review the code with requirements",
             details = "Review the code with requirements",
             prompt = (function()
-                local role = read_file("/home/lemon/.vim/AI/agents/reviewer.md")
-                local behavior = "1. If user provides the selected code, just review this part coe don't touch others.\n" ..
-                    "2. If user doesn't provide the selected code, review the whole file.\n" ..
-                    "3. Respond in Chinese in all chat."
+                local role = read_file(ai_path .. "/agents/reviewer.md")
+                local behavior = "1. If user provides the selected code, just review this part code don't touch others\n" ..
+                    "2. If user doesn't provide the selected code, review all the files\n"
                 return AI_prompt(role, behavior)
             end)()
         },
@@ -358,8 +381,8 @@ avanteOpts.opts = {
             description = "Make plan how to implement the feature with requirements",
             details = "Make plan how to implement the feature with requirements",
             prompt = (function()
-                local role = read_file("/home/lemon/.vim/AI/agents/doc_architect.md")
-                local behavior = read_file("/home/lemon/.vim/AI/commands/plan_feature.md")
+                local role = read_file(ai_path .. "/agents/doc_architect.md")
+                local behavior = read_file(ai_path .. "/commands/plan_feature.md")
                 return AI_prompt(role, behavior)
             end)()
         },
@@ -368,39 +391,57 @@ avanteOpts.opts = {
             name = "explain_simple",
             description = "Explain the target/question simply",
             details = "Explain the target simply",
-            prompt = "Work as a professional software engineer to explain the target." ..
-                    "Provide a summary description/explaination of 'What is it? What is it used for?"..
-                    " Why design that? Use an example to illustrate the workflow of it.'. " ..
-                    "The summary should include each important steps in it." ..
-                    "Respond in Chinese in all chat. " ..
-                    "If there's no target provided, use the selected code. The target could be a thing or question." ..
-                    "The target/question is: "
+            prompt = (function()
+                local role = "You're a professional software engineer."
+                local behavior = "1. Explan the target/question as following output:\n" ..
+                    "## What's it?\n" ..
+                    "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+                    "## Example\n" ..
+                    "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
+                    "## Important components\n" ..
+                    "[List important data structures and functions and comment for what they used for.]\n" ..
+                    "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it."
+                local user_prompt = "The target/question is: "
+                return AI_prompt(role, behavior, user_prompt)
+            end)()
         },
         {
             name = "explain_detail",
-            description = "Explain the concept of target/question detaily",
-            details = "Explain the concept of target detaily",
-            prompt = "Work as a professional software engineer to explain the concept of target user provides. I want to know: \n" ..
-                    "- What is it used for? \n" ..
-                    "- Why design that? \n" ..
-                    "- What's the important components in it? How to use them?\n" ..
-                    "  You should list the strcutre and comment for the important member variable.\n" ..
-                    "- How does it work with other modules? \n" ..
-                    "- Explain the purpose of this parameter in conjunction with the code. For example, in the code xxx, it demonstrates that this parameter is used for YYY." ..
-                    "- Use an example to illustrate the workflow of it.\n" ..
-                    "- If there's no target provided, use the selected code. The target could be a thing or question.\n" ..
-                    "Always respond in Chinese. The target/question is: "
+            description = "Explain the target/question detaily",
+            details = "Explain the target detaily",
+            prompt = (function()
+                local role = "You're a professional software engineer."
+                local behavior = "1. Explan the target/question as following output:\n" ..
+                    "## What's it?\n" ..
+                    "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+                    "## Example\n" ..
+                    "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
+                    "## Important components\n" ..
+                    "[What's the important components? How to use them?]\n" ..
+                    "[List important data structures and functions and comment for what they used for.]\n" ..
+                    "## Why design that?\n" ..
+                    "[benefits, trade-offs, pros and cons, ...]\n" ..
+                    "## Intergration\n" ..
+                    "[How does it work with other modules?]\n" ..
+                    "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it."
+                local user_prompt = "The target/question is: "
+                return AI_prompt(role, behavior, user_prompt)
+            end)()
         },
         {
             name = "analyze_issue",
             description = "Analyze rootcause with the issue",
             details = "Analyze rootcause with the issue",
             prompt = (function()
-                local role = read_file("/home/lemon/.vim/AI/agents/analyzer.md")
+                local role = read_file(ai_path .. "/agents/analyzer.md")
                 local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                    "2. If you cannot find the rootcause. Image one situation will cause it.\n" ..
-                    "3. Provide the possible solution.\n" ..
-                    "4. Always respond in Chinese.\n"
+                    "2. Provide the possible solution.\n" ..
+                    "3. If you cannot find the rootcause. Image one situation will cause it. You should tag it as just a guess.\n" ..
+                    "4. Output format:\n" ..
+                    "## Analysis\n" ..
+                    "[Multiple Analysis results]\n" ..
+                    "## Code change\n" ..
+                    "[Code change of the most possilbe solution]\n"
                 local user_prompt = "The issue is:\n"
                 return AI_prompt(role, behavior, user_prompt)
             end)()
@@ -411,7 +452,6 @@ avanteOpts.opts = {
             details = "Answer in Chinse",
             prompt = "Always respond in Chinese in all chat."
         },
-
         -- Add more custom shortcuts...
     }
 }
@@ -477,4 +517,17 @@ avanteOpts.opts = {
 -- *   Use `AvanteEdit` when you want the AI to modify a specific block of code you've selected.
 -- *   Use `AvanteChat` for general discussions and exploration of your codebase with the AI.
 
+require("avante").setup(avanteOpts.opts)
+-- Doesn't work know, maybe work in future
+--[[
+   [ require("avante.config").override({
+   [     system_prompt = (function()
+   [         local prompt = read_file(ai_path .. "/agents/general.md")
+   [         if not prompt or prompt == "" then
+   [             prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出"
+   [         end
+   [         return prompt
+   [     end)()
+   [ })
+   ]]
 return avanteOpts
