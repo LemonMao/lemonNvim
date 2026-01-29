@@ -376,23 +376,23 @@ map("x", "<leader>ow", ":set wrap!<CR>", { desc = "Toggle line wrapping" })
 -- ## Search
 -- ## ------------------------------ ##
 -- Telescope, find files/global grep
-map("n", "sc", ":Telescope ", { desc = "Telescope: Type telescope command" })
+map("n", "sh", ":Telescope ", { desc = "Telescope: Type telescope command" })
 map("n", "sf", ":Telescope find_files<CR>", { desc = "Telescope: Search for files in PWD" })
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Telescope: Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Telescope: Lists previously open files" })
 map("n", "st", ":Telescope treesitter<CR>", { desc = "Telescope: Lists function names, variables, and other symbols from treesitter queries" })
-map("n", "sh", search_man_pages_with_cursor_word, { desc = "Telescope: Search man pages for word under cursor" })
 map("n", "sk", ":Telescope keymaps <CR>", { desc = "Telescope: Lists manpage entries" })
 -- grep xxx string from xxx
-map("n", "sg",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Telescope: Search string in current buffer" })
-map("n", "sgf", function() do_telescope_search('live_grep', 'open_files') end, { desc = "Telescope: Search string in the open buffers" })
-map("n", "sgd", function() do_telescope_search('live_grep', 'prompt_dir') end, { desc = "Telescope: Search string in directory" })
-map("n", "sgg", function() do_telescope_search('live_grep', 'pwd') end, { desc = "Telescope: Search string in your PWD" })
+map("n", "ss",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Telescope: Search string in current buffer" })
+map("n", "ssd", function() do_telescope_search('live_grep', 'prompt_dir') end, { desc = "Telescope: Search string in directory" })
+map("n", "ssg", function() do_telescope_search('live_grep', 'pwd') end, { desc = "Telescope: Search string in your PWD" })
+map("n", "ssf", function() do_telescope_search('live_grep', 'open_files') end, { desc = "Telescope: Search string in the open buffers" })
 -- search cursor string from xxx
-map({"n", "x"}, "ss",  function() do_telescope_search('grep_string', 'current_buffer') end, { desc = "Telescope: Search string under cursor in current buffer" })
-map({"n", "x"}, "ssf", function() do_telescope_search('grep_string', 'open_files') end, { desc = "Telescope: Search string under cursor in open buffers" })
-map({"n", "x"}, "ssd", function() do_telescope_search('grep_string', 'prompt_dir') end, { desc = "Telescope: Search string under cursor in directory" })
-map({"n", "x"}, "ssg", function() do_telescope_search('grep_string', 'pwd') end, { desc = "Telescope: Searches for the string under your cursor in your PWD" })
+map({"n", "x"}, "sc",  function() do_telescope_search('grep_string', 'current_buffer') end, { desc = "Telescope: Search string under cursor in current buffer" })
+map({"n", "x"}, "scd", function() do_telescope_search('grep_string', 'prompt_dir') end, { desc = "Telescope: Search string under cursor in directory" })
+map({"n", "x"}, "scg", function() do_telescope_search('grep_string', 'pwd') end, { desc = "Telescope: Searches for the string under your cursor in your PWD" })
+map({"n", "x"}, "scf", function() do_telescope_search('grep_string', 'open_files') end, { desc = "Telescope: Search string under cursor in open buffers" })
+map({"n", "x"}, "sch", search_man_pages_with_cursor_word, { desc = "Telescope: Search man pages for word under cursor" })
 
 -- Telescope 列表中 插入模式快捷键
 local open_with_trouble = require("trouble.sources.telescope").open

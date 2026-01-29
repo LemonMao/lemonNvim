@@ -720,10 +720,11 @@ local function get_text_for_ai()
             return nil
         end
         local original_cursor = vim.api.nvim_win_get_cursor(0)
-        vim.cmd('normal! ""viw') -- use blackhole register
+        -- Select word and exit to update marks '< and '>
+        vim.cmd('normal! viw')
+        vim.cmd('normal! \27')
         local start_pos = vim.fn.getpos("'<")
         local end_pos = vim.fn.getpos("'>")
-        vim.cmd("normal! <Esc>")
         vim.api.nvim_win_set_cursor(0, original_cursor)
 
         range = {
@@ -735,12 +736,20 @@ local function get_text_for_ai()
             end_col = end_pos[3],
         }
     elseif mode:match("[vV]") then
+        -- Exit visual mode to update marks '< and '>
+        vim.cmd('normal! \27')
         local start_pos = vim.fn.getpos("'<")
         local end_pos = vim.fn.getpos("'>")
 
+        -- Check if marks are valid
+        if start_pos[2] == 0 or end_pos[2] == 0 then
+            vim.notify("Could not determine visual selection range.", vim.log.levels.WARN)
+            return nil
+        end
+
         local save_reg = vim.fn.getreg('"')
         local save_regtype = vim.fn.getregtype('"')
-        vim.cmd("silent normal! y")
+        vim.cmd("silent normal! gvy") -- Re-select and yank
         text = vim.fn.getreg('"')
         vim.fn.setreg('"', save_reg, save_regtype)
 
