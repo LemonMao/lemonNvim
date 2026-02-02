@@ -286,6 +286,52 @@ local function toggle_multiple_buffer_groups()
     vim.cmd('BufferLineGroupToggle Logs')
 end
 
+local function toggle_tagbar_with_nvimtree_check()
+    -- Check if NvimTree buffer is open
+    local has_nvimtree = false
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local buf_name = vim.api.nvim_buf_get_name(buf)
+        if vim.api.nvim_buf_is_valid(buf) and buf_name:find("NvimTree") then
+            has_nvimtree = true
+            break
+        end
+    end
+
+    -- If NvimTree is open, close it first
+    if has_nvimtree then
+        vim.cmd('NvimTreeToggle')
+        -- Small delay to ensure NvimTree is closed before opening TagBar
+        vim.defer_fn(function()
+            vim.cmd('TagbarToggle')
+        end, 50)
+    else
+        vim.cmd('TagbarToggle')
+    end
+end
+
+local function toggle_nvimtree_with_tagbar_check()
+    -- Check if TagBar buffer is open
+    local has_tagbar = false
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        local buf_name = vim.api.nvim_buf_get_name(buf)
+        if vim.api.nvim_buf_is_valid(buf) and (buf_name:find("Tagbar") or buf_name:find("__Tagbar__")) then
+            has_tagbar = true
+            break
+        end
+    end
+
+    -- If TagBar is open, close it first
+    if has_tagbar then
+        vim.cmd('TagbarClose')
+        -- Small delay to ensure TagBar is closed before opening NvimTree
+        vim.defer_fn(function()
+            vim.cmd('NvimTreeToggle')
+        end, 50)
+    else
+        vim.cmd('NvimTreeToggle')
+    end
+end
+
 -- ## -------------------------------------- ##
 -- ## F1 ~~ F12 Hotkeys
 -- ## -------------------------------------- ##
@@ -342,7 +388,7 @@ map({'n', 't', 'v'}, '<A-7>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 7<CR>', { de
 map({'n', 't', 'v'}, '<A-8>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 8<CR>', { desc = "Bufferline: Switch to buffer with number"})
 map({'n', 't', 'v'}, '<A-9>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 9<CR>', { desc = "Bufferline: Switch to buffer with number"})
 -- Terminal
-map('t', '<leader><Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
+map('t', '<C-n>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
 -- map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
 map("t", "<C-u>", "<C-\\><C-n><C-u>", { desc = "Exit terminal mode and scroll up page"})
 -- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})
@@ -364,8 +410,8 @@ map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual
 -- ## ------------------------------ ##
 --
 -- directory tree, nvim-tree
-map("n", "<leader>f", ":NvimTreeToggle<CR>", { desc = "open dir tree" })
-map("n", "<leader>F", ":NvimTreeFindFile<CR>", { desc = "open dir tree for file" })
+map("n", "<leader>f", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
+map("n", "<leader>F", ":NvimTreeFindFile!<CR>", { desc = "open dir tree for file" })
 -- Noice
 map("n", "<leader>nl", ":Noice last<CR>", { desc = "Noice: Last message" })
 map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message history" })
@@ -507,7 +553,7 @@ map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "Diag
 map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "Diag: Open LSP def/ref/..." })  -- LSP Definitions / references / ... (Trouble)
 map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "Diag: Open Trouble local list" })                   -- Location List (Trouble)
 map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "Diag: Open Trouble Quickfix" })                    -- Quickfix List (Trouble)
-map("n", "<leader>dt", ":TagbarToggle<CR>", { desc = "Diag: Open Tagbar" })                    -- Quickfix List (Trouble)
+map("n", "<leader>dt", toggle_tagbar_with_nvimtree_check, { desc = "Diag: Open Tagbar (closes NvimTree first if open)" })                    -- Quickfix List (Trouble)
 --
 -- git
 map('n', '<leader>gb', ':BlameToggle<CR>', { desc = "Git: Diplay Blame history" })
