@@ -13,7 +13,7 @@ let g:tagbar_sort = 0
             "\ 'private'   : '-'
             "\ }
 
-nnoremap <leader>dt :TagbarToggle<CR>
+" nnoremap <leader>dt :TagbarToggle<CR>
 
 " ########
 " gtags

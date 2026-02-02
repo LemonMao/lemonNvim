@@ -19,9 +19,9 @@ local function AI_prompt(role, behavior, user_prompt)
     end
     local final_user_prompt = user_prompt or "User requirements may be empty or as specified below."
 
-    return "Follow system rules in all sessions: " .. (system_prompt or "") .. "\n\n" ..
-        "Work as role:\n" .. (role or "") .. "\n\n" ..
-        "Perform the behavior:\n" .. (behavior or "") .. "\n\n" ..
+    return "Follow system rules:\n{{{\n" .. (system_prompt or "") .. "\n}}}\n" ..
+        "Work as role:\n{{{\n" .. (role or "") .. "\n}}}\n" ..
+        "Perform the behavior:\n{{{\n" .. (behavior or "") .. "\n}}}\n" ..
         final_user_prompt
 end
 
@@ -48,8 +48,10 @@ avanteOpts.opts = {
             -- model = "gemini-2.5-flash",
             -- disable_tools = false,
             disable_tools = true,
+            timeout = 30000, -- timeout in milliseconds
+            context_window = 1048576, -- 1M, Number of tokens to send to the model for context
             extra_request_body = {
-                max_tokens = 131072, -- The maximum number of tokens in the generated response.
+                max_tokens = 65536, -- 64k, The maximum number of tokens in the generated response.
                 generationConfig = {
                     temperature = 0.1,
                 },
@@ -61,35 +63,43 @@ avanteOpts.opts = {
             model = "gemini-2.5-flash-lite",
             -- disable_tools = false,
             disable_tools = true,
+            timeout = 30000, -- timeout in milliseconds
+            context_window = 1048576, -- 1M, Number of tokens to send to the model for context
             extra_request_body = {
-                max_tokens = 131072, -- 128k, maximum number of tokens in the generated response.
+                max_tokens = 65536, -- 64k, The maximum number of tokens in the generated response.
                 generationConfig = {
                     temperature = 0.1,
                 },
             },
         },
         -- 100k 0.2Y
-        dp_r = {
+        ds_r = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
             model = "deepseek-reasoner",
             timeout = 30000, -- timeout in milliseconds
             disable_tools = true,
+            context_window = 131072, -- 128k, Number of tokens to send to the model for context
             extra_request_body = {
                 temperature = 0.1,
-                max_tokens = 65536, -- 64k, maximum number of tokens in the generated response.
-                max_completion_tokens = 65536, -- Increase this to include reasoning tokens (for reasoning models)
+                max_completion_tokens = 64*1024, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
             },
         },
-        dp_c = {
+        ds_v = {
             __inherited_from = "openai",
             api_key_name = "DEEPSEEK_API_KEY",
             endpoint = "https://api.deepseek.com",
             model = "deepseek-chat",
             timeout = 30000, -- timeout in milliseconds
             disable_tools = true,
+            context_window = 131072, -- 128k, Number of tokens to send to the model for context
+            extra_request_body = {
+                temperature = 0.1,
+                max_completion_tokens = 64*1024, -- Increase this to include reasoning tokens (for reasoning models)
+                reasoning_effort = "low", -- low|medium|high, only used for reasoning models
+            },
         },
     },
     web_search_engine = {
@@ -136,6 +146,22 @@ avanteOpts.opts = {
         timeout = 60000, -- Timeout in milliseconds
     },
     mappings = {
+        -- NOTE: The following will be safely set by avante.nvim
+        ask = "<leader>aa",
+        new_ask = "<leader>an",
+        zen_mode = "<leader>az",
+        edit = "<leader>ae",
+        refresh = "<leader>ar",
+        focus = "<leader>af",
+        stop = "<leader>aS",
+        toggle = {
+            default = "<leader>at",
+            debug = "<leader>ad",
+            selection = "<leader>aC",
+            suggestion = "<leader>as",
+            repomap = "<leader>aR",
+        },
+
         diff = {
             ours = "co",
             theirs = "ct",
@@ -176,18 +202,6 @@ avanteOpts.opts = {
             close_from_input = nil, -- e.g., { normal = "<Esc>", insert = "<C-d>" }
         },
     },
-    -- ask = "<leader>aa",
-    -- edit = "<leader>ae",
-    -- refresh = "<leader>ar",
-    -- focus = "<leader>af",
-    -- toggle = {
-    --   default = "<leader>at",
-    --   debug = "<leader>ad",
-    --   hint = "<leader>ah",
-    --   suggestion = "<leader>as",
-    --   repomap = "<leader>aR",
-    -- },
-
     windows = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
@@ -208,8 +222,8 @@ avanteOpts.opts = {
             start_insert = false, -- Start insert mode when opening the edit window
         },
         ask = {
-            floating = false, -- Open the 'AvanteAsk' prompt in a floating window
-            start_insert = false, -- Start insert mode when opening the ask window
+            floating = true, -- Open the 'AvanteAsk' prompt in a floating window
+            start_insert = true, -- Start insert mode when opening the ask window
             border = "rounded",
             ---@type "ours" | "theirs"
             focus_on_apply = "theirs", -- which diff to focus after applying

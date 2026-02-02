@@ -598,8 +598,8 @@ nvim_tree.setup({
     sync_root_with_cwd = false,
     respect_buf_cwd = false,
     update_focused_file = {
-        enable = true,
-        update_cwd = true,
+        enable = false,
+        update_cwd = false,
     },
     -- 隐藏 .文件 和 node_modules 文件夹
     filters = {
@@ -622,7 +622,7 @@ nvim_tree.setup({
             -- 首次打开大小适配
             resize_window = true,
             -- 打开文件时关闭
-            quit_on_open = true,
+            quit_on_open = false,
         },
     },
     -- wsl install -g wsl-open
@@ -631,7 +631,18 @@ nvim_tree.setup({
         cmd = 'wsl-open', -- mac 直接设置为 open
     },
     renderer = {
-        group_empty = true,
+        group_empty = false,
+        indent_markers = {
+            enable = true,
+            inline_arrows = true,
+            icons = {
+                corner = "└",
+                edge = "│",
+                item = "│",
+                bottom = "─",
+                none = " ",
+            },
+        },
     },
 })
 -- 自动关闭
