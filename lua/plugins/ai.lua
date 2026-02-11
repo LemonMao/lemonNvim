@@ -222,7 +222,15 @@ local function terminal_bash()
         style = "minimal", border = "rounded",
         title = " AI Bash Command ",
         title_pos = "center",
-        footer = " [Enter] Submit | [Ctrl+Enter] New Line | [Esc] Quit ",
+        footer = {
+            { " ", "FloatFooter" },
+            { "[Enter]", "DiagnosticError" },
+            { " Submit | ", "FloatFooter" },
+            { "[Ctrl+Enter]", "DiagnosticError" },
+            { " New Line | ", "FloatFooter" },
+            { "[Esc]", "DiagnosticError" },
+            { " Quit ", "FloatFooter" },
+        },
         footer_pos = "center",
     })
 

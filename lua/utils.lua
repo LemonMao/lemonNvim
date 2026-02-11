@@ -22,9 +22,9 @@ function M.AI_prompt(role, behavior, user_prompt)
     end
     local final_user_prompt = user_prompt or "User requirements may be empty or as specified below."
 
-    return "Follow system rules:\n{{{\n" .. (system_prompt or "") .. "\n}}}\n" ..
-        "Work as role:\n{{{\n" .. (role or "") .. "\n}}}\n" ..
-        "Perform the behavior:\n{{{\n" .. (behavior or "") .. "\n}}}\n" ..
+    return "Follow system rules:\n{{{\n" .. (system_prompt or "") .. "}}}\n\n" ..
+        "Work as role:\n{{{\n" .. (role or "") .. "}}}\n\n" ..
+        "Perform the behavior:\n{{{\n" .. (behavior or "") .. "}}}\n\n" ..
         final_user_prompt
 end
 
