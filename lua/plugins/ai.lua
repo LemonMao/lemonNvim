@@ -31,9 +31,9 @@ local config = {
     prompts = {
         translate = read_file(ai_path .. "/translation.prt"),
         explain = AI_prompt("A professional software engineer.",
-            "1. Explan the target/question as following output:\n" ..
+            "1. Explain the target/question as following output:\n" ..
             "## What's it?\n" ..
-            "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+            "[Provide a detail description/explanation of 'What is it? What is it used for?]\n" ..
             "## Example\n" ..
             "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
             "## Important components\n" ..
@@ -80,8 +80,14 @@ local function call_gemini_api(text, prompt, model_config, callback)
         on_exit = function()
             local resp = table.concat(chunks, "")
             local ok, parsed = pcall(vim.fn.json_decode, resp)
-            if ok and parsed and parsed.candidates and parsed.candidates[1] then
-                callback(parsed.candidates[1].content.parts[1].text)
+            if ok and parsed then
+                if parsed.error then
+                    vim.notify("API Error: " .. (parsed.error.message or "Unknown"), vim.log.levels.ERROR)
+                elseif parsed.candidates and parsed.candidates[1] then
+                    callback(parsed.candidates[1].content.parts[1].text)
+                else
+                    vim.notify("Failed to parse API response", vim.log.levels.ERROR)
+                end
             else
                 vim.notify("Failed to parse API response", vim.log.levels.ERROR)
             end
@@ -127,8 +133,12 @@ local function show_floating_result(result)
         vim.api.nvim_win_close(win, true)
         if ai_state.range then
             local r = ai_state.range
-            vim.api.nvim_set_current_win(r.winid)
-            vim.api.nvim_buf_set_text(r.bufnr, r.start_row, r.start_col, r.end_row, r.end_col, content)
+            if vim.api.nvim_win_is_valid(r.winid) then
+                vim.api.nvim_set_current_win(r.winid)
+                vim.api.nvim_buf_set_text(r.bufnr, r.start_row, r.start_col, r.end_row, r.end_col, content)
+            else
+                vim.notify("Target window no longer valid", vim.log.levels.WARN)
+            end
             ai_state.range = nil
         end
     end, opts)
@@ -153,12 +163,15 @@ local function get_text_and_range()
     elseif mode:match("[vV]") then
         vim.cmd('normal! \27')
         local s, e = vim.fn.getpos("'<"), vim.fn.getpos("'>")
-        local reg = vim.fn.getreg('"')
-        vim.cmd("silent normal! gvy")
-        text = vim.fn.getreg('"')
-        vim.fn.setreg('"', reg)
         local line = vim.api.nvim_buf_get_lines(bufnr, e[2]-1, e[2], false)[1]
         local ecol = (vim.fn.visualmode() == "V") and #line or math.min(e[3], #line)
+
+        if vim.fn.visualmode() == "V" then
+            text = table.concat(vim.api.nvim_buf_get_lines(bufnr, s[2]-1, e[2], false), "\n")
+        else
+            text = table.concat(vim.api.nvim_buf_get_text(bufnr, s[2]-1, s[3]-1, e[2]-1, ecol, {}), "\n")
+        end
+
         range = { bufnr = bufnr, winid = winid, start_row = s[2]-1, start_col = s[3]-1, end_row = e[2]-1, end_col = ecol }
     end
 
