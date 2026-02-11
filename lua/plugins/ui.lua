@@ -598,8 +598,8 @@ nvim_tree.setup({
     sync_root_with_cwd = false,
     respect_buf_cwd = false,
     update_focused_file = {
-        enable = false,
-        update_cwd = false,
+        enable = true,
+        update_cwd = true,
     },
     -- 隐藏 .文件 和 node_modules 文件夹
     filters = {
@@ -622,7 +622,7 @@ nvim_tree.setup({
             -- 首次打开大小适配
             resize_window = true,
             -- 打开文件时关闭
-            quit_on_open = false,
+            quit_on_open = true,
         },
     },
     -- wsl install -g wsl-open

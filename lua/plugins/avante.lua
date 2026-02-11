@@ -1,29 +1,9 @@
+local utils = require("utils")
+local ai_path = utils.ai_path
+local read_file = utils.read_file
+local AI_prompt = utils.AI_prompt
+
 local avanteOpts = {}
--- AI 代理和命令的基础路径
-local ai_path = vim.fn.expand("~/.vim/AI")
-
-local function read_file(path)
-    local file = io.open(path, "r")
-    if file then
-        local content = file:read("*a")
-        file:close()
-        return content
-    end
-    return nil -- 或者抛出错误，取决于您的需求
-end
-
-local function AI_prompt(role, behavior, user_prompt)
-    local system_prompt = read_file(ai_path .. "/agents/general.md")
-    if not system_prompt or system_prompt == "" then
-        system_prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出."
-    end
-    local final_user_prompt = user_prompt or "User requirements may be empty or as specified below."
-
-    return "Follow system rules:\n{{{\n" .. (system_prompt or "") .. "\n}}}\n" ..
-        "Work as role:\n{{{\n" .. (role or "") .. "\n}}}\n" ..
-        "Perform the behavior:\n{{{\n" .. (behavior or "") .. "\n}}}\n" ..
-        final_user_prompt
-end
 
 avanteOpts.opts = {
     -- History location: .local/state/nvim/avante/
@@ -222,7 +202,7 @@ avanteOpts.opts = {
             start_insert = false, -- Start insert mode when opening the edit window
         },
         ask = {
-            floating = true, -- Open the 'AvanteAsk' prompt in a floating window
+            floating = false, -- Open the 'AvanteAsk' prompt in a floating window
             start_insert = true, -- Start insert mode when opening the ask window
             border = "rounded",
             ---@type "ours" | "theirs"
