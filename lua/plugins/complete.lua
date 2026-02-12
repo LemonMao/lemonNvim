@@ -4,6 +4,7 @@ if not status then
     return
 end
 
+local minuet = require("minuet")
 local luasnipm = require("luasnip")
 
 
@@ -107,14 +108,22 @@ cmp.setup({
                 if cmp.visible() then
                     cmp.select_next_item()
                 else
-                    cmp.complete()
+                    if minuet.action.is_visible() then
+                        minuet.action.next()
+                    else
+                        cmp.complete()
+                    end
                 end
             end,
             c = function(fallback)
                 if cmp.visible() then
                     cmp.select_next_item()
                 else
-                    fallback()
+                    if minuet.action.is_visible() then
+                        minuet.action.next()
+                    else
+                        fallback()
+                    end
                 end
             end,
         }),
@@ -123,25 +132,25 @@ cmp.setup({
                 if cmp.visible() then
                     cmp.select_prev_item()
                 else
-                    cmp.complete()
+                    if minuet.action.is_visible() then
+                        minuet.action.prev()
+                    else
+                        cmp.complete()
+                    end
                 end
             end,
             c = function(fallback)
                 if cmp.visible() then
                     cmp.select_prev_item()
                 else
-                    fallback()
+                    if minuet.action.is_visible() then
+                        minuet.action.prev()
+                    else
+                        fallback()
+                    end
                 end
             end,
         }),
-        ['<C-x>'] = cmp.mapping(function(fallback)
-            if cmp.visible() then
-                cmp.abort()
-                require('codeium.virtual_text').cycle_or_complete()
-            else
-                require('codeium.virtual_text').cycle_or_complete()
-            end
-        end),
         ["<CR>"] = cmp.mapping(function(fallback)
             if cmp.visible() and cmp.get_active_entry() then
                 if luasnipm.expandable() then
@@ -161,10 +170,15 @@ cmp.setup({
             elseif cmp.visible() then
                 cmp.select_next_item()
             else
-                -- 使用 feedkeys 模拟原生 Tab 行为，绕过 nvim-cmp 在 NVIM 0.11 上的 fallback Bug
-                -- local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
-                -- vim.api.nvim_feedkeys(termcode, "n", true)
-                fallback()
+                if minuet.action.is_visible() then
+                    -- accept whole LLM completion
+                    minuet.action.accept()
+                else
+                    -- 使用 feedkeys 模拟原生 Tab 行为，绕过 nvim-cmp 在 NVIM 0.11 上的 fallback Bug
+                    -- local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)
+                    -- vim.api.nvim_feedkeys(termcode, "n", true)
+                    fallback()
+                end
             end
         end, {"i", "s"}),
 

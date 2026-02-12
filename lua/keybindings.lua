@@ -388,7 +388,7 @@ map({'n', 't', 'v'}, '<A-7>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 7<CR>', { de
 map({'n', 't', 'v'}, '<A-8>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 8<CR>', { desc = "Bufferline: Switch to buffer with number"})
 map({'n', 't', 'v'}, '<A-9>', '<C-\\><C-n><Cmd>BufferLineGoToBuffer 9<CR>', { desc = "Bufferline: Switch to buffer with number"})
 -- Terminal
-map('t', '<C-n>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
+map('t', '<A-q>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
 -- map("t", "<C-h>", "<C-\\><C-n><C-w>h", {desc = "Jump to left windown from terminal windown"})
 map("t", "<C-u>", "<C-\\><C-n><C-u>", { desc = "Exit terminal mode and scroll up page"})
 -- map("t", "<C-l>", "<C-\\><C-n><C-w>l", {desc = "Jump to left windown from terminal windown"})

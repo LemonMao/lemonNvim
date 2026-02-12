@@ -2,6 +2,8 @@ local utils = require("utils")
 local ai_path = utils.ai_path
 local read_file = utils.read_file
 local AI_prompt = utils.AI_prompt
+local cmp = require("cmp")
+local minuet = require("minuet")
 
 -- ## ------------------------------ ##
 -- ## Configuration & State
@@ -183,7 +185,7 @@ end
 -- ## Actions
 -- ## ------------------------------ ##
 
-local function translate()
+local function ai_translate()
     local text = get_text_and_range()
     if text then
         vim.notify("Translating...", vim.log.levels.INFO)
@@ -191,7 +193,7 @@ local function translate()
     end
 end
 
-local function explain()
+local function ai_explain()
     local text = get_text_and_range()
     if text then
         vim.notify("Explaining...", vim.log.levels.INFO)
@@ -199,7 +201,7 @@ local function explain()
     end
 end
 
-local function avante_explain()
+local function ai_avante_explain()
     local text = get_text_and_range()
     if not text then return end
     -- Wrap the selected code with specific markers and include the explain command
@@ -212,7 +214,7 @@ local function avante_explain()
     end
 end
 
-local function explain_function()
+local function ai_explain_function()
     local symbol = vim.fn.expand("<cword>")
     local path = "/tmp/AI_Func_" .. os.date("%Y%m%d_%H%M%S") .. ".md"
     local cmd = string.format("callGraph.py --codebase %s --depth 2 --start %s --explain_to %s",
@@ -223,7 +225,7 @@ local function explain_function()
     end })
 end
 
-local function terminal_bash()
+local function ai_bash()
     local chan = vim.bo.channel
     if chan == 0 then return end
     local terminal_ctx = table.concat(vim.api.nvim_buf_get_lines(0, -50, -1, false), "\n")
@@ -275,13 +277,27 @@ local function terminal_bash()
     vim.cmd("startinsert")
 end
 
+local function ai_completion()
+    if cmp.visible() then
+        cmp.abort()
+        minuet.action.next()
+    else
+        minuet.action.next()
+    end
+end
+
+local function ai_dismiss()
+    cmp.abort()
+    minuet.action.dismiss()
+end
+
 -- ## ------------------------------ ##
 -- ## LLM Context Generation
 -- ## ------------------------------ ##
 
 local function get_ctx_file() return "/tmp/llm_ctx_" .. vim.fn.getpid() .. ".md" end
 
-local function add_context()
+local function ai_add_context()
     local text = get_text_and_range()
     if text then
         local file = get_ctx_file()
@@ -293,7 +309,7 @@ local function add_context()
     end
 end
 
-local function clean_context()
+local function ai_clean_context()
     vim.fn.writefile({}, get_ctx_file())
     vim.cmd("edit " .. get_ctx_file())
 end
@@ -302,10 +318,13 @@ end
 -- ## Keymaps
 -- ## ------------------------------ ##
 
-vim.keymap.set({ "n", "v" }, "<leader>at", translate, { desc = "AI: Translate" })
-vim.keymap.set({"v"}, "<C-x>", avante_explain, { desc = "AI: Avante Explain with buffer content" })
-vim.keymap.set({"v" }, "<leader>ae", explain, { desc = "AI: Simple Explain just for selected content" })
-vim.keymap.set("n", "<leader>aef", explain_function, { desc = "AI: CallGraph Explain" })
-vim.keymap.set("t", "<C-x>", terminal_bash, { desc = "AI: Bash Command" })
-vim.keymap.set("v", ",ac", add_context, { desc = "AI: Add Context" })
-vim.keymap.set("n", ",acl", clean_context, { desc = "AI: Clean Context" })
+vim.keymap.set({ "n", "v" }, "<leader>at", ai_translate, { desc = "AI: Translate" })
+vim.keymap.set("v", "<C-x>", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
+vim.keymap.set("t", "<C-x>", ai_bash, { desc = "AI: Generate Bash Command" })
+vim.keymap.set("i", "<C-x>", ai_completion, { desc = "AI: Trigger completion" })
+vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
+
+vim.keymap.set("v", "<leader>ae", ai_explain, { desc = "AI: Simple Explain just for selected content" })
+vim.keymap.set("n", "<leader>ae", ai_explain_function, { desc = "AI: CallGraph Explain" })
+vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
+vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })

@@ -130,16 +130,16 @@ avanteOpts.opts = {
         ask = "<leader>ac",
         new_ask = "<leader>aa",
         zen_mode = "<leader>az",
-        edit = "<leader>ae1",
-        refresh = "<leader>ar",
-        focus = "<leader>af",
-        stop = "<leader>aS",
+        edit = nil,
+        refresh = nil,
+        focus = nil,
+        stop = nil,
         toggle = {
-            default = "<leader>at",
+            default = nil,
             debug = "<leader>aD",
             selection = "<leader>aC",
-            suggestion = "<leader>as",
-            repomap = "<leader>aR",
+            suggestion = nil,
+            repomap = nil,
         },
 
         diff = {

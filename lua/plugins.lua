@@ -81,6 +81,12 @@ require("lazy").setup({
             "hrsh7th/nvim-cmp",
         },
     },
+    {
+        'milanglacier/minuet-ai.nvim',
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+        },
+    },
     --
     -- ############
     -- UI - ui.lua
