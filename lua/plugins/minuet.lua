@@ -1,10 +1,13 @@
+-- Usage:
+-- 1. How to change LLM mode?
+-- Minute change_model xxx
 require('minuet').setup {
     -- Provider
     provider = 'gemini',
     -- provider = 'openai_fim_compatible',
     provider_options = {
         openai_fim_compatible = {
-            end_point = 'https://api.deepseek.com/beta',
+            end_point = 'https://api.deepseek.com/beta/completions',
             model = 'deepseek-chat',
             stream = true,
             api_key = 'DEEPSEEK_API_KEY',
@@ -12,6 +15,7 @@ require('minuet').setup {
             optional = {
                 max_tokens = 256,
                 top_p = 0.9,
+                stop = { '\n\n' },
             },
         },
         gemini = {

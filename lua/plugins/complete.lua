@@ -4,7 +4,7 @@ if not status then
     return
 end
 
-local minuet = require("minuet")
+local minuet_action = require("minuet.virtualtext").action
 local luasnipm = require("luasnip")
 
 
@@ -108,8 +108,8 @@ cmp.setup({
                 if cmp.visible() then
                     cmp.select_next_item()
                 else
-                    if minuet.action.is_visible() then
-                        minuet.action.next()
+                    if minuet_action.is_visible() then
+                        minuet_action.next()
                     else
                         cmp.complete()
                     end
@@ -119,8 +119,8 @@ cmp.setup({
                 if cmp.visible() then
                     cmp.select_next_item()
                 else
-                    if minuet.action.is_visible() then
-                        minuet.action.next()
+                    if minuet_action.is_visible() then
+                        minuet_action.next()
                     else
                         fallback()
                     end
@@ -132,8 +132,8 @@ cmp.setup({
                 if cmp.visible() then
                     cmp.select_prev_item()
                 else
-                    if minuet.action.is_visible() then
-                        minuet.action.prev()
+                    if minuet_action.is_visible() then
+                        minuet_action.prev()
                     else
                         cmp.complete()
                     end
@@ -143,8 +143,8 @@ cmp.setup({
                 if cmp.visible() then
                     cmp.select_prev_item()
                 else
-                    if minuet.action.is_visible() then
-                        minuet.action.prev()
+                    if minuet_action.is_visible() then
+                        minuet_action.prev()
                     else
                         fallback()
                     end
@@ -159,7 +159,11 @@ cmp.setup({
                     cmp.confirm({ behavior = cmp.ConfirmBehavior.Replace, select = false })
                 end
             else
-                fallback()
+                if minuet_action.is_visible() then
+                    minuet_action.accept_n_lines()
+                else
+                    fallback()
+                end
             end
         end),
 
@@ -170,9 +174,9 @@ cmp.setup({
             elseif cmp.visible() then
                 cmp.select_next_item()
             else
-                if minuet.action.is_visible() then
+                if minuet_action.is_visible() then
                     -- accept whole LLM completion
-                    minuet.action.accept()
+                    minuet_action.accept()
                 else
                     -- 使用 feedkeys 模拟原生 Tab 行为，绕过 nvim-cmp 在 NVIM 0.11 上的 fallback Bug
                     -- local termcode = vim.api.nvim_replace_termcodes("<Tab>", true, true, true)

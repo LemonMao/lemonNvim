@@ -3,7 +3,7 @@ local ai_path = utils.ai_path
 local read_file = utils.read_file
 local AI_prompt = utils.AI_prompt
 local cmp = require("cmp")
-local minuet = require("minuet")
+local minuet_action = require("minuet.virtualtext").action
 
 -- ## ------------------------------ ##
 -- ## Configuration & State
@@ -215,7 +215,29 @@ local function ai_avante_explain()
 end
 
 local function ai_explain_function()
+    -- Check if current file type is C/C++
+    local filetype = vim.bo.filetype
+    local c_filetypes = { "c", "cpp", "cxx", "cc", "h", "hpp" }
+    local is_c_file = false
+
+    for _, ft in ipairs(c_filetypes) do
+        if filetype == ft then
+            is_c_file = true
+            break
+        end
+    end
+
+    if not is_c_file then
+        vim.notify("AI explain function only works for C/C++ files (current: " .. filetype .. ")", vim.log.levels.WARN)
+        return
+    end
+
     local symbol = vim.fn.expand("<cword>")
+    if symbol == "" then
+        vim.notify("No symbol under cursor", vim.log.levels.WARN)
+        return
+    end
+
     local path = "/tmp/AI_Func_" .. os.date("%Y%m%d_%H%M%S") .. ".md"
     local cmd = string.format("callGraph.py --codebase %s --depth 2 --start %s --explain_to %s",
         vim.fn.shellescape(vim.fn.getcwd()), vim.fn.shellescape(symbol), vim.fn.shellescape(path))
@@ -280,15 +302,15 @@ end
 local function ai_completion()
     if cmp.visible() then
         cmp.abort()
-        minuet.action.next()
+        minuet_action.next()
     else
-        minuet.action.next()
+        minuet_action.next()
     end
 end
 
 local function ai_dismiss()
     cmp.abort()
-    minuet.action.dismiss()
+    minuet_action.dismiss()
 end
 
 -- ## ------------------------------ ##
@@ -319,9 +341,9 @@ end
 -- ## ------------------------------ ##
 
 vim.keymap.set({ "n", "v" }, "<leader>at", ai_translate, { desc = "AI: Translate" })
-vim.keymap.set("v", "<C-x>", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
-vim.keymap.set("t", "<C-x>", ai_bash, { desc = "AI: Generate Bash Command" })
-vim.keymap.set("i", "<C-x>", ai_completion, { desc = "AI: Trigger completion" })
+vim.keymap.set("v", "<A-x>", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
+vim.keymap.set("t", "<A-x>", ai_bash, { desc = "AI: Generate Bash Command" })
+vim.keymap.set("i", "<A-x>", ai_completion, { desc = "AI: Trigger completion" })
 vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
 
 vim.keymap.set("v", "<leader>ae", ai_explain, { desc = "AI: Simple Explain just for selected content" })

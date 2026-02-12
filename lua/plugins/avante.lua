@@ -63,7 +63,7 @@ avanteOpts.opts = {
             context_window = 131072, -- 128k, Number of tokens to send to the model for context
             extra_request_body = {
                 temperature = 0.1,
-                max_completion_tokens = 64*1024, -- Increase this to include reasoning tokens (for reasoning models)
+                max_completion_tokens = 32*1024, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "medium", -- low|medium|high, only used for reasoning models
             },
         },
@@ -77,7 +77,7 @@ avanteOpts.opts = {
             context_window = 131072, -- 128k, Number of tokens to send to the model for context
             extra_request_body = {
                 temperature = 0.1,
-                max_completion_tokens = 64*1024, -- Increase this to include reasoning tokens (for reasoning models)
+                max_completion_tokens = 16*1024, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "low", -- low|medium|high, only used for reasoning models
             },
         },
