@@ -12,17 +12,19 @@ codeiumOpts = {
     enable_chat = false,
 
     -- remove if not use enterprise_mode
-    enterprise_mode = true,
-    api = {
-        -- the hostname. Example: "codeium.example.com". Required when using enterprise mode
-        host = "codeium.delllabs.net",
-        -- the port. Defaults to 443
-        port = 443,
-        -- the path prefix to the API server. Default for enterprise: "/_route/api_server"
-        path = "/_route/api_server",
-        -- the portal URL to use (for enterprise mode). Defaults to host:port
-        portal_url = nil,
-    },
+    --[[
+       [ enterprise_mode = true,
+       [ api = {
+       [     -- the hostname. Example: "codeium.example.com". Required when using enterprise mode
+       [     host = "codeium.delllabs.net",
+       [     -- the port. Defaults to 443
+       [     port = 443,
+       [     -- the path prefix to the API server. Default for enterprise: "/_route/api_server"
+       [     path = "/_route/api_server",
+       [     -- the portal URL to use (for enterprise mode). Defaults to host:port
+       [     portal_url = nil,
+       [ },
+       ]]
 
     virtual_text = {
         enabled = true,

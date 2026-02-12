@@ -127,16 +127,16 @@ avanteOpts.opts = {
     },
     mappings = {
         -- NOTE: The following will be safely set by avante.nvim
-        ask = "<leader>aa",
-        new_ask = "<leader>an",
+        ask = "<leader>ac",
+        new_ask = "<leader>aa",
         zen_mode = "<leader>az",
-        edit = "<leader>ae",
+        edit = "<leader>ae1",
         refresh = "<leader>ar",
         focus = "<leader>af",
         stop = "<leader>aS",
         toggle = {
             default = "<leader>at",
-            debug = "<leader>ad",
+            debug = "<leader>aD",
             selection = "<leader>aC",
             suggestion = "<leader>as",
             repomap = "<leader>aR",

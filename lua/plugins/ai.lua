@@ -199,6 +199,19 @@ local function explain()
     end
 end
 
+local function avante_explain()
+    local text = get_text_and_range()
+    if not text then return end
+    -- Wrap the selected code with specific markers and include the explain command
+    local wrapped = string.format("#explain_code\n--selected code start---\n%s\n--selected code end---", text)
+    local ok, avante = pcall(require, "avante.api")
+    if ok then
+        avante.ask({ new_chat=true, question = wrapped })
+    else
+        vim.notify("Avante API not found", vim.log.levels.ERROR)
+    end
+end
+
 local function explain_function()
     local symbol = vim.fn.expand("<cword>")
     local path = "/tmp/AI_Func_" .. os.date("%Y%m%d_%H%M%S") .. ".md"
@@ -290,8 +303,9 @@ end
 -- ## ------------------------------ ##
 
 vim.keymap.set({ "n", "v" }, "<leader>at", translate, { desc = "AI: Translate" })
-vim.keymap.set({ "n", "v" }, "<leader>ae", explain, { desc = "AI: Explain" })
+vim.keymap.set({"v"}, "<C-x>", avante_explain, { desc = "AI: Avante Explain with buffer content" })
+vim.keymap.set({"v" }, "<leader>ae", explain, { desc = "AI: Simple Explain just for selected content" })
 vim.keymap.set("n", "<leader>aef", explain_function, { desc = "AI: CallGraph Explain" })
-vim.keymap.set("t", "<C-t>", terminal_bash, { desc = "AI: Bash Command" })
+vim.keymap.set("t", "<C-x>", terminal_bash, { desc = "AI: Bash Command" })
 vim.keymap.set("v", ",ac", add_context, { desc = "AI: Add Context" })
 vim.keymap.set("n", ",acl", clean_context, { desc = "AI: Clean Context" })
