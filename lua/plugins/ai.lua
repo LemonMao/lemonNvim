@@ -29,13 +29,13 @@ local config = {
         },
         ["deepseek-chat"] = {
             provider = "openai",
-            endpoint = "https://api.deepseek.com",
+            endpoint = "https://api.deepseek.com/v1/chat/completions",
             model = "deepseek-chat",
             api_key = os.getenv("DEEPSEEK_API_KEY") or "",
         },
         ["deepseek-reasoner"] = {
             provider = "openai",
-            endpoint = "https://api.deepseek.com",
+            endpoint = "https://api.deepseek.com/v1/chat/completions",
             model = "deepseek-reasoner",
             api_key = os.getenv("DEEPSEEK_API_KEY") or "",
         },
@@ -93,6 +93,11 @@ end
 vim.g.ai_current_model_group = "gemini"
 
 local function change_model_group(group_name)
+    if group_name ~= "" then
+        -- Remove trailing whitespace from selected group_name
+        group_name = group_name:gsub("%s*$", "")
+    end
+
     local group = config.model_groups[group_name]
     if not group then
         local available = table.concat(vim.tbl_keys(config.model_groups), ", ")
@@ -156,6 +161,7 @@ local function call_llm_api(text, prompt, model_config, callback)
                 { role = "system", content = prompt },
                 { role = "user", content = text },
             },
+            stream = false,
         })
         auth_header = string.format(' -H "Authorization: Bearer %s"', model_config.api_key)
     else
@@ -173,8 +179,14 @@ local function call_llm_api(text, prompt, model_config, callback)
             local err = table.concat(data, "")
             if err ~= "" then vim.notify("API Error: " .. err, vim.log.levels.ERROR) end
         end,
-        on_exit = function()
+        on_exit = function(_, exit_code)
             local resp = table.concat(chunks, "")
+
+            -- Debug logging for troubleshooting
+            if exit_code ~= 0 then
+                vim.notify("curl command failed with exit code: " .. exit_code, vim.log.levels.ERROR)
+            end
+
             local ok, parsed = pcall(vim.fn.json_decode, resp)
             if ok and parsed then
                 if parsed.error then
@@ -184,10 +196,16 @@ local function call_llm_api(text, prompt, model_config, callback)
                 elseif model_config.provider == "openai" and parsed.choices and parsed.choices[1] then
                     callback(parsed.choices[1].message.content)
                 else
-                    vim.notify("Failed to parse API response", vim.log.levels.ERROR)
+                    -- Log the actual response for debugging
+                    vim.notify("Failed to parse API response. Response: " .. vim.inspect(parsed), vim.log.levels.ERROR)
                 end
             else
-                vim.notify("Failed to parse API response", vim.log.levels.ERROR)
+                -- Log the raw response for debugging
+                if resp == "" then
+                    vim.notify("Failed to parse API response: Empty response received", vim.log.levels.ERROR)
+                else
+                    vim.notify("Failed to parse API response. Raw response: " .. string.sub(resp, 1, 200), vim.log.levels.ERROR)
+                end
             end
         end,
     })
@@ -503,12 +521,12 @@ end
 -- ## ------------------------------ ##
 
 vim.keymap.set({ "n", "v" }, "<leader>at", ai_translate, { desc = "AI: Translate" })
-vim.keymap.set("v", "<C-g>", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
 vim.keymap.set("t", "<C-g>", ai_bash, { desc = "AI: Generate Bash Command" })
 vim.keymap.set("i", "<C-g>", ai_completion, { desc = "AI: Trigger completion" })
 vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
 
-vim.keymap.set("v", "<leader>ae", ai_explain, { desc = "AI: Simple Explain just for selected content" })
-vim.keymap.set("n", "<leader>ae", ai_explain_function, { desc = "AI: CallGraph Explain" })
+vim.keymap.set("v", "<leader>ae", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
+vim.keymap.set("v", "<leader>aes", ai_explain, { desc = "AI: Simple Explain just for selected content" })
+vim.keymap.set("n", "<leader>aef", ai_explain_function, { desc = "AI: CallGraph Explain" })
 vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
 vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })
