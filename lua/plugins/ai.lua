@@ -29,7 +29,9 @@ local config = {
     defaults = {
         translation = "gemini-2.5-flash-lite",
         explanation = "gemini-2.5-flash",
+        bashcommond = "gemini-2.5-flash",
     },
+    bash_history_size = 10,
     prompts = {
         translate = read_file(ai_path .. "/translation.prt"),
         explain = AI_prompt("A professional software engineer.",
@@ -252,6 +254,10 @@ local function ai_bash()
     if chan == 0 then return end
     local terminal_ctx = table.concat(vim.api.nvim_buf_get_lines(0, -50, -1, false), "\n")
 
+    -- Initialize history
+    if not ai_state.history then ai_state.history = {} end
+    ai_state.history_index = #ai_state.history + 1
+
     local buf = vim.api.nvim_create_buf(false, true)
     local win = vim.api.nvim_open_win(buf, true, {
         relative = "editor", width = 80, height = 2,
@@ -265,11 +271,54 @@ local function ai_bash()
             { " Submit | ", "FloatFooter" },
             { "[Ctrl+Enter]", "DiagnosticError" },
             { " New Line | ", "FloatFooter" },
+            { "[Ctrl+p]", "DiagnosticError" },
+            { "/", "FloatFooter" },
+            { "[Ctrl+n]", "DiagnosticError" },
+            { " History | ", "FloatFooter" },
             { "[Esc]", "DiagnosticError" },
             { " Quit ", "FloatFooter" },
         },
         footer_pos = "center",
     })
+
+    -- Disable cmp for this buffer to avoid keymap conflicts
+    pcall(function() cmp.setup.buffer { enabled = false } end)
+
+    -- Navigation functions
+    local function previous_prompt()
+        if not ai_state.history or #ai_state.history == 0 then
+            vim.notify("No history", vim.log.levels.INFO)
+            return
+        end
+        if ai_state.history_index > 1 then
+            ai_state.history_index = ai_state.history_index - 1
+            local lines = vim.split(ai_state.history[ai_state.history_index], "\n")
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+            -- Move cursor to end of last line
+            vim.api.nvim_win_set_cursor(win, { #lines, #lines[#lines] })
+        else
+            vim.notify("Beginning of history", vim.log.levels.INFO)
+        end
+    end
+
+    local function next_prompt()
+        if not ai_state.history or #ai_state.history == 0 then
+            vim.notify("No history", vim.log.levels.INFO)
+            return
+        end
+        if ai_state.history_index < #ai_state.history then
+            ai_state.history_index = ai_state.history_index + 1
+            local lines = vim.split(ai_state.history[ai_state.history_index], "\n")
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+            vim.api.nvim_win_set_cursor(win, { #lines, #lines[#lines] })
+        elseif ai_state.history_index == #ai_state.history then
+            ai_state.history_index = ai_state.history_index + 1
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "" })
+            vim.api.nvim_win_set_cursor(win, { 1, 0 })
+        else
+            vim.notify("Already at newest", vim.log.levels.INFO)
+        end
+    end
 
     -- Enter to submit
     vim.keymap.set("i", "<CR>", function()
@@ -278,8 +327,17 @@ local function ai_bash()
         vim.cmd("stopinsert")
         if not req:match("%S") then return end
 
+        -- Add to history
+        table.insert(ai_state.history, req)
+        ai_state.history_index = #ai_state.history + 1
+
+        -- Trim history if exceeds configured size
+        while #ai_state.history > config.bash_history_size do
+            table.remove(ai_state.history, 1)
+        end
+
         local prompt = config.prompts.bash .. "\nContext:\n" .. terminal_ctx
-        call_gemini_api(req, prompt, get_model_config("explanation"), function(res)
+        call_gemini_api(req, prompt, get_model_config("bashcommond"), function(res)
             local cmd = res:gsub("```%w*", ""):gsub("```", ""):gsub("^%s*", ""):gsub("%s*$", "")
             vim.api.nvim_chan_send(chan, cmd)
         end)
@@ -289,6 +347,11 @@ local function ai_bash()
     vim.keymap.set("i", "<C-CR>", function()
         vim.api.nvim_put({ "" }, "c", false, true)
     end, { buffer = buf })
+
+    -- History navigation
+    local map_opts = { buffer = buf, nowait = true, silent = true }
+    vim.keymap.set({ "i", "n" }, "<C-p>", previous_prompt, map_opts)
+    vim.keymap.set({ "i", "n" }, "<C-n>", next_prompt, map_opts)
 
     -- Esc to quit
     vim.keymap.set({ "i", "n" }, "<Esc>", function()
@@ -341,9 +404,9 @@ end
 -- ## ------------------------------ ##
 
 vim.keymap.set({ "n", "v" }, "<leader>at", ai_translate, { desc = "AI: Translate" })
-vim.keymap.set("v", "<A-x>", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
-vim.keymap.set("t", "<A-x>", ai_bash, { desc = "AI: Generate Bash Command" })
-vim.keymap.set("i", "<A-x>", ai_completion, { desc = "AI: Trigger completion" })
+vim.keymap.set("v", "<C-g>", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
+vim.keymap.set("t", "<C-g>", ai_bash, { desc = "AI: Generate Bash Command" })
+vim.keymap.set("i", "<C-g>", ai_completion, { desc = "AI: Trigger completion" })
 vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
 
 vim.keymap.set("v", "<leader>ae", ai_explain, { desc = "AI: Simple Explain just for selected content" })
