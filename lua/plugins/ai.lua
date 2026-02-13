@@ -140,7 +140,31 @@ end, {
     desc = "Change AI model group (e.g., deepseek, gemini)"
 })
 
+local function sanitize_utf8(str)
+    if type(str) ~= "string" or str == "" then return str end
+    -- 1. 快速检查：如果已经是合法的 UTF-8，直接返回，避免破坏中文
+    if pcall(vim.fn.json_encode, str) then return str end
+
+    -- 2. 尝试修复：利用 iconv 的 //IGNORE 标志剔除末尾可能的截断字节或非法序列
+    -- 这在处理从终端或视觉选择中截断的中文时非常有效
+    local ok, cleaned = pcall(vim.fn.iconv, str, "utf-8", "utf-8//IGNORE")
+    if ok and cleaned ~= "" and pcall(vim.fn.json_encode, cleaned) then
+        return cleaned
+    end
+
+    -- 3. 最终保底：如果仍然非法，逐字节从末尾缩减直到合法（处理截断的最稳妥方案）
+    local temp = str
+    while #temp > 0 do
+        temp = temp:sub(1, -2)
+        if pcall(vim.fn.json_encode, temp) then return temp end
+    end
+    return ""
+end
+
 local function call_llm_api(text, prompt, model_config, callback)
+    text = sanitize_utf8(text)
+    prompt = sanitize_utf8(prompt)
+
     if not model_config or model_config.api_key == "" then
         vim.notify("Invalid model config or missing API key", vim.log.levels.ERROR)
         return
@@ -275,12 +299,25 @@ local function get_text_and_range()
         vim.cmd('normal! viw\27')
         local s, e = vim.fn.getpos("'<"), vim.fn.getpos("'>")
         vim.api.nvim_win_set_cursor(0, cursor)
-        range = { bufnr = bufnr, winid = winid, start_row = s[2]-1, start_col = s[3]-1, end_row = e[2]-1, end_col = e[3] }
+        -- Correctly calculate end_col to include multi-byte characters
+        local line = vim.api.nvim_buf_get_lines(bufnr, e[2]-1, e[2], false)[1] or ""
+        local char = vim.fn.strcharpart(line:sub(e[3]), 0, 1)
+        local ecol = e[3] + #char - 1
+        range = { bufnr = bufnr, winid = winid, start_row = s[2]-1, start_col = s[3]-1, end_row = e[2]-1, end_col = ecol }
     elseif mode:match("[vV]") then
         vim.cmd('normal! \27')
         local s, e = vim.fn.getpos("'<"), vim.fn.getpos("'>")
-        local line = vim.api.nvim_buf_get_lines(bufnr, e[2]-1, e[2], false)[1]
-        local ecol = (vim.fn.visualmode() == "V") and #line or math.min(e[3], #line)
+        local line = vim.api.nvim_buf_get_lines(bufnr, e[2]-1, e[2], false)[1] or ""
+
+        local ecol
+        if vim.fn.visualmode() == "V" then
+            ecol = #line
+        else
+            -- e[3] is the byte index of the start of the last character.
+            -- We need to include all bytes of that character for nvim_buf_get_text.
+            local char = vim.fn.strcharpart(line:sub(e[3]), 0, 1)
+            ecol = e[3] + #char - 1
+        end
 
         if vim.fn.visualmode() == "V" then
             text = table.concat(vim.api.nvim_buf_get_lines(bufnr, s[2]-1, e[2], false), "\n")

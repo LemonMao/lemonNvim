@@ -86,8 +86,8 @@ let g:gutentags_trace = 0
 " inoremap <m-d> <c-\><c-o>:PreviewScroll +5<cr>
 autocmd FileType qf nnoremap <silent><buffer> p :PreviewQuickfix<cr>
 autocmd FileType qf nnoremap <silent><buffer> P :PreviewClose<cr>
-nmap <m-t> :PreviewTag <cr>
-nmap <m-s> :PreviewSignature <cr>
+" nmap <m-t> :PreviewTag <cr>
+" nmap <m-s> :PreviewSignature <cr>
 " nmap <m-c> :PreviewClose <cr>
 " close quickfix window
 

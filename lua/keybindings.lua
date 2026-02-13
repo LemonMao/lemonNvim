@@ -125,61 +125,90 @@ local function search_string_in_directory()
 end
 
 local function close_empty_and_current_buffers()
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == "" and buf ~= vim.api.nvim_get_current_buf() then
-            vim.api.nvim_buf_delete(buf, {force = true})
-        end
-    end
+    --[[
+       [ for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+       [     if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) == "" and buf ~= vim.api.nvim_get_current_buf() then
+       [         vim.api.nvim_buf_delete(buf, {force = true})
+       [     end
+       [ end
+       ]]
     vim.cmd("bdelete!")
 end
 
 local function close_preview_window()
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        local buf_name = vim.api.nvim_buf_get_name(buf)
-        if vim.api.nvim_buf_is_valid(buf) and (buf_name == "" or buf_name:find("NvimTree")) and buf ~= vim.api.nvim_get_current_buf() then
-            vim.api.nvim_buf_delete(buf, {force = true})
+    local visible_modifiable_bufs = {}
+    local seen_bufs = {}
+    local all_visible_bufs = {}
+
+    -- 1. Collect all visible and modifiable buffers in the current tabpage
+    -- We use nvim_tabpage_list_wins(0) to get buffers that the user can actually SEE.
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    for _, win in ipairs(wins) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        if vim.api.nvim_buf_is_valid(buf) then
+            -- Track all buffers that are currently visible in windows
+            all_visible_bufs[buf] = true
+
+            if vim.bo[buf].modifiable then
+                if not seen_bufs[buf] then
+                    local full_path = vim.api.nvim_buf_get_name(buf)
+                    -- Only add buffers that have a valid file name (not empty or "[No Name]")
+                    if full_path ~= "" and full_path ~= "[No Name]" then
+                        local name = vim.fn.fnamemodify(full_path, ":t")
+                        table.insert(visible_modifiable_bufs, { id = buf, name = name, win = win })
+                        seen_bufs[buf] = true
+                    end
+                end
+            end
         end
     end
-    vim.cmd("PreviewClose")
-end
 
---[[
--- TODO: remove them later
-   [ local function search_cursor_string_in_current_buffer()
-   [     local current_file = vim.api.nvim_buf_get_name(0)
-   [     if vim.fn.empty(current_file) == 1 then
-   [         vim.notify("No file in current buffer to search.", vim.log.levels.WARN, { title = "Telescope Grep Current Buffer" })
-   [         return
-   [     end
-   [     -- telescope.builtin.grep_string automatically uses the word under the cursor
-   [     require('telescope.builtin').grep_string({ search_dirs = { current_file } })
-   [ end
-   [
-   [ -- New function to search string under cursor in the current buffer's directory
-   [ local function search_cursor_string_in_current_buffer_directory()
-   [     local current_file = vim.api.nvim_buf_get_name(0)
-   [     if vim.fn.empty(current_file) == 1 then
-   [         vim.notify("No file in current buffer. Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Grep CWD" })
-   [         require('telescope.builtin').grep_string() -- Fallback to PWD
-   [         return
-   [     end
-   [
-   [     local buffer_dir = vim.fn.fnamemodify(current_file, ":h")
-   [     if vim.fn.empty(buffer_dir) == 1 then
-   [         vim.notify("Could not determine buffer directory. Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Grep CWD" })
-   [         require('telescope.builtin').grep_string() -- Fallback to PWD
-   [         return
-   [     end
-   [
-   [     if vim.fn.isdirectory(buffer_dir) == 0 then
-   [         vim.notify("Directory not found or invalid: " .. buffer_dir .. ". Searching in PWD.", vim.log.levels.WARN, { title = "Telescope Grep CWD" })
-   [         require('telescope.builtin').grep_string() -- Fallback to PWD
-   [         return
-   [     end
-   [
-   [     require('telescope.builtin').grep_string({ cwd = buffer_dir })
-   [ end
-   ]]
+    local count = #visible_modifiable_bufs
+    local target_idx = nil
+
+    if count > 1 then
+        -- 2. If more than one modifiable buffer, prompt user to choose one to keep
+        local prompt = "Visible modifiable buffers:\n"
+        for i, info in ipairs(visible_modifiable_bufs) do
+            prompt = prompt .. i .. ". " .. info.name .. "\n"
+        end
+        prompt = prompt .. "\nKeep who? Input index: "
+
+        local choice = vim.fn.input(prompt)
+        target_idx = tonumber(choice)
+
+        if not target_idx or not visible_modifiable_bufs[target_idx] then
+            if choice ~= "" then
+                vim.notify("Invalid selection or cancelled.", vim.log.levels.WARN)
+            end
+            return
+        end
+    elseif count == 1 then
+        -- 3. If only one found, that's our target
+        target_idx = 1
+    else
+        -- No modifiable buffers visible, just close preview if exists
+        pcall(vim.cmd, "PreviewClose")
+        return
+    end
+
+    -- 4. Move cursor to the kept buffer's window
+    local keep_info = visible_modifiable_bufs[target_idx]
+    local keep_buf_id = keep_info.id
+    vim.api.nvim_set_current_win(keep_info.win)
+
+    -- 5. Close all other VISIBLE buffers (modifiable or not) in the current tabpage
+    -- We only iterate over the buffers we found in windows, avoiding backend/hidden buffers.
+    for buf_id, _ in pairs(all_visible_bufs) do
+        if buf_id ~= keep_buf_id then
+            -- Use pcall to avoid breaking the loop if a buffer cannot be deleted (e.g. modified)
+            pcall(vim.api.nvim_buf_delete, buf_id, { force = false })
+        end
+    end
+
+    -- Also close the preview window as per original function intent
+    pcall(vim.cmd, "PreviewClose")
+end
 
 -- Unified function for Telescope searches
 -- search_type: 'live_grep' (for user input) or 'grep_string' (for word under cursor)
@@ -332,6 +361,25 @@ local function toggle_nvimtree_with_tagbar_check()
     end
 end
 
+local function toggle_noice_history()
+    -- Check if Noice history window is already open
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local buf_name = vim.api.nvim_buf_get_name(buf)
+        local filetype = vim.bo[buf].filetype
+
+        -- Check if this is a Noice history window
+        if filetype == 'noice' or buf_name:match('Noice') then
+            -- Close the specific window instead of just dismissing notifications
+            vim.api.nvim_win_close(win, true)
+            return
+        end
+    end
+
+    -- If not open, show the Noice history
+    vim.cmd('Noice history')
+end
+
 -- ## -------------------------------------- ##
 -- ## F1 ~~ F12 Hotkeys
 -- ## -------------------------------------- ##
@@ -358,7 +406,7 @@ map("n", "<C-Down>", ":resize -10<CR>", { desc = "Reduce horizonal windown size"
 map("n", "<C-Up>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
 map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
 map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
-map({'n', 't', 'v'}, "<A-c>", close_preview_window, { desc = "Bufferline: Close preview window"})
+map({'n', 't', 'v'}, "<A-c>", close_preview_window, { desc = "Bufferline: Clean temporary windows and keep useful one."})
 -- 等比例 <C-w> =
 -- 关当前窗口 <C-w>c
 map("v", "<", "<gv", { desc = "Visual indent" })
@@ -410,24 +458,23 @@ map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual
 -- ## ------------------------------ ##
 --
 -- directory tree, nvim-tree
-map("n", "<leader>f", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
-map("n", "<leader>F", ":NvimTreeFindFile!<CR>", { desc = "open dir tree for file" })
+map("n", "<A-f>", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
+map("n", "<A-F>", ":NvimTreeFindFile!<CR>", { desc = "open dir tree for file" })
 -- Noice
-map("n", "<leader>nl", ":Noice last<CR>", { desc = "Noice: Last message" })
-map("n", "<leader>nh", ":Noice history<CR>", { desc = "Noice: Shows the message history" })
+map("n", "<A-M>", toggle_noice_history, { desc = "Noice: Toggle message history" })
 -- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })
--- Readable
+-- Readable, 换行
 map("x", "<leader>ow", ":set wrap!<CR>", { desc = "Toggle line wrapping" })
 
 -- ## Search
 -- ## ------------------------------ ##
 -- Telescope, find files/global grep
-map("n", "sh", ":Telescope ", { desc = "Telescope: Type telescope command" })
 map("n", "sf", ":Telescope find_files<CR>", { desc = "Telescope: Search for files in PWD" })
 map("n", "sb", ":Telescope buffers<CR>", { desc = "Telescope: Lists open buffers" })
 map("n", "sm", ":Telescope oldfiles<CR>", { desc = "Telescope: Lists previously open files" })
 map("n", "st", ":Telescope treesitter<CR>", { desc = "Telescope: Lists function names, variables, and other symbols from treesitter queries" })
 map("n", "sk", ":Telescope keymaps <CR>", { desc = "Telescope: Lists manpage entries" })
+map("n", "sh", ":Telescope man_pages <CR>", { desc = "Telescope: Search man pages for word under cursor" })
 -- grep xxx string from xxx
 map("n", "ss",  function() do_telescope_search('live_grep', 'current_buffer') end, { desc = "Telescope: Search string in current buffer" })
 map("n", "ssd", function() do_telescope_search('live_grep', 'prompt_dir') end, { desc = "Telescope: Search string in directory" })
@@ -553,7 +600,7 @@ map("n", "<leader>ds", ":Trouble symbols toggle focus=false<CR>", { desc = "Diag
 map("n", "<leader>dl", ":Trouble lsp toggle focus=false win.position=right<CR>", { desc = "Diag: Open LSP def/ref/..." })  -- LSP Definitions / references / ... (Trouble)
 map("n", "<leader>dL", ":Trouble loclist toggle<CR>", { desc = "Diag: Open Trouble local list" })                   -- Location List (Trouble)
 map("n", "<leader>dq", ":Trouble qflist toggle<CR>", { desc = "Diag: Open Trouble Quickfix" })                    -- Quickfix List (Trouble)
-map("n", "<leader>dt", toggle_tagbar_with_nvimtree_check, { desc = "Diag: Open Tagbar (closes NvimTree first if open)" })                    -- Quickfix List (Trouble)
+map("n", "<A-t>", toggle_tagbar_with_nvimtree_check, { desc = "Diag: Open Tagbar (closes NvimTree first if open)" })                    -- Quickfix List (Trouble)
 --
 -- git
 map('n', '<leader>gb', ':BlameToggle<CR>', { desc = "Git: Diplay Blame history" })
