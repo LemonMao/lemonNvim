@@ -51,12 +51,14 @@ local config = {
             explanation = "deepseek-chat",
             bashcommand = "deepseek-chat",
             completion  = "openai_fim_compatible:deepseek-chat",
+            avante      = "ds_v", -- Provider name for Avante
         },
         gemini = {
             translation = "gemini-2.5-flash-lite",
             explanation = "gemini-2.5-flash",
             bashcommand = "gemini-2.5-flash",
             completion  = "gemini:gemini-2.5-flash",
+            avante      = "gemini",
         },
     },
     bash_history_size = 10,
@@ -111,6 +113,12 @@ local function change_model_group(group_name)
     local ok, err = pcall(vim.cmd, minuet_cmd)
     if not ok then
         vim.notify("Minuet update failed: " .. tostring(err), vim.log.levels.WARN)
+    end
+
+    -- Update Avante provider
+    if group.avante then
+        local avante_cmd = string.format("AvanteSwitchProvider %s", group.avante)
+        pcall(vim.cmd, avante_cmd)
     end
 
     vim.notify("AI Model group changed to: " .. group_name, vim.log.levels.INFO)
@@ -281,7 +289,7 @@ local function ai_translate()
     local text = get_text_and_range()
     if text then
         vim.notify("Translating...", vim.log.levels.INFO)
-        call_gemini_api(text, config.prompts.translate, get_model_config("translation"), show_floating_result)
+        call_llm_api(text, config.prompts.translate, get_model_config("translation"), show_floating_result)
     end
 end
 
@@ -289,7 +297,7 @@ local function ai_explain()
     local text = get_text_and_range()
     if text then
         vim.notify("Explaining...", vim.log.levels.INFO)
-        call_gemini_api(text, config.prompts.explain, get_model_config("explanation"), show_floating_result)
+        call_llm_api(text, config.prompts.explain, get_model_config("explanation"), show_floating_result)
     end
 end
 
@@ -428,7 +436,7 @@ local function ai_bash()
         end
 
         local prompt = config.prompts.bash .. "\nContext:\n" .. terminal_ctx
-        call_gemini_api(req, prompt, get_model_config("bashcommand"), function(res)
+        call_llm_api(req, prompt, get_model_config("bashcommand"), function(res)
             local cmd = res:gsub("```%w*", ""):gsub("```", ""):gsub("^%s*", ""):gsub("%s*$", "")
             vim.api.nvim_chan_send(chan, cmd)
         end)

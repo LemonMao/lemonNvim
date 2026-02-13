@@ -84,6 +84,11 @@ local function async_command_to_quickfix(command)
       vim.fn.setqflist({}, 'r')
       vim.fn.setqflist(qf_entries, 'a')
       vim.notify('Async command finished, output in quickfix', vim.log.levels.INFO, { title = 'Async Command' })
+
+      -- Open quickfix window if there are entries
+      if #qf_entries > 0 then
+        vim.cmd('copen')
+      end
     end,
   })
 end
