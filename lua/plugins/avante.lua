@@ -337,8 +337,9 @@ avanteOpts.opts = {
                 "[The modified or new code. Use necessary in-line English comments.]\n" ..
                 "## explaination\n" ..
                 "[A detail summary of the changes, benefits, and potential trade-offs.]\n" ..
-                "3. When implementing feature, if user doesn't provide requirements. Ask for it." ..
-                "4. Ensure the code follows best practices and the explanation is concise."
+                "3. The first priority requirements are from User. And then follow the previous design/review plan" ..
+                "4. If you don't find any useful requirements to implement the code, ask for it" ..
+                "4. Ensure the code follows best practices and the explanation is concise"
                 return AI_prompt(role, behavior)
             end)()
         },

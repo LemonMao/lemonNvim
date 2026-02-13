@@ -16,22 +16,26 @@ local ai_state = {
 local config = {
     models = {
         ["gemini-2.5-flash-lite"] = {
+            provider = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
             model = "gemini-2.5-flash-lite",
             api_key = os.getenv("GEMINI_API_KEY") or "",
         },
         ["gemini-2.5-flash"] = {
+            provider = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
             model = "gemini-2.5-flash",
             api_key = os.getenv("GEMINI_API_KEY") or "",
         },
         ["deepseek-chat"] = {
-            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+            provider = "openai",
+            endpoint = "https://api.deepseek.com",
             model = "deepseek-chat",
             api_key = os.getenv("DEEPSEEK_API_KEY") or "",
         },
         ["deepseek-reasoner"] = {
-            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+            provider = "openai",
+            endpoint = "https://api.deepseek.com",
             model = "deepseek-reasoner",
             api_key = os.getenv("DEEPSEEK_API_KEY") or "",
         },
@@ -39,20 +43,20 @@ local config = {
     defaults = {
         translation = "gemini-2.5-flash-lite",
         explanation = "gemini-2.5-flash",
-        bashcommond = "gemini-2.5-flash",
+        bashcommand = "gemini-2.5-flash",
     },
     model_groups = {
         deepseek = {
             translation = "deepseek-chat",
-            explanation = "deepseek-reasoner",
-            bashcommond = "deepseek-chat",
-            completion = "deepseek-chat",
+            explanation = "deepseek-chat",
+            bashcommand = "deepseek-chat",
+            completion  = "openai_fim_compatible:deepseek-chat",
         },
         gemini = {
             translation = "gemini-2.5-flash-lite",
             explanation = "gemini-2.5-flash",
-            bashcommond = "gemini-2.5-flash",
-            completion = "gemini-2.5-flash",
+            bashcommand = "gemini-2.5-flash",
+            completion  = "gemini:gemini-2.5-flash",
         },
     },
     bash_history_size = 10,
@@ -97,13 +101,13 @@ local function change_model_group(group_name)
     -- Update internal defaults
     config.defaults.translation = group.translation
     config.defaults.explanation = group.explanation
-    config.defaults.bashcommond = group.bashcommond
+    config.defaults.bashcommand = group.bashcommand
 
     -- Update global state for UI
     vim.g.ai_current_model_group = group_name
 
     -- Update Minuet plugin model
-    local minuet_cmd = string.format("Minuet change_model openai_fim_compatible:%s", group.completion)
+    local minuet_cmd = string.format("Minuet change_model %s", group.completion)
     local ok, err = pcall(vim.cmd, minuet_cmd)
     if not ok then
         vim.notify("Minuet update failed: " .. tostring(err), vim.log.levels.WARN)
@@ -123,20 +127,36 @@ end, {
     desc = "Change AI model group (e.g., deepseek, gemini)"
 })
 
-local function call_gemini_api(text, prompt, model_config, callback)
+local function call_llm_api(text, prompt, model_config, callback)
     if not model_config or model_config.api_key == "" then
         vim.notify("Invalid model config or missing API key", vim.log.levels.ERROR)
         return
     end
 
-    local url = string.format("%s/%s:generateContent?key=%s", model_config.endpoint, model_config.model, model_config.api_key)
-    local json_body = vim.fn.json_encode({
-        contents = { { role = "user", parts = { { text = text } } } },
-        systemInstruction = { parts = { { text = prompt } } },
-    })
+    local url, json_body, auth_header
+    if model_config.provider == "gemini" then
+        url = string.format("%s/%s:generateContent?key=%s", model_config.endpoint, model_config.model, model_config.api_key)
+        json_body = vim.fn.json_encode({
+            contents = { { role = "user", parts = { { text = text } } } },
+            systemInstruction = { parts = { { text = prompt } } },
+        })
+    elseif model_config.provider == "openai" then
+        url = model_config.endpoint
+        json_body = vim.fn.json_encode({
+            model = model_config.model,
+            messages = {
+                { role = "system", content = prompt },
+                { role = "user", content = text },
+            },
+        })
+        auth_header = string.format(' -H "Authorization: Bearer %s"', model_config.api_key)
+    else
+        vim.notify("Unsupported provider: " .. (model_config.provider or "nil"), vim.log.levels.ERROR)
+        return
+    end
 
-    local cmd = string.format('curl -s -X POST -H "Content-Type: application/json" --data @- "%s" <<< %s',
-        url, vim.fn.shellescape(json_body))
+    local cmd = string.format('curl -s -X POST -H "Content-Type: application/json"%s --data @- "%s" <<< %s',
+        auth_header or "", url, vim.fn.shellescape(json_body))
 
     local chunks = {}
     vim.fn.jobstart(cmd, {
@@ -151,8 +171,10 @@ local function call_gemini_api(text, prompt, model_config, callback)
             if ok and parsed then
                 if parsed.error then
                     vim.notify("API Error: " .. (parsed.error.message or "Unknown"), vim.log.levels.ERROR)
-                elseif parsed.candidates and parsed.candidates[1] then
+                elseif model_config.provider == "gemini" and parsed.candidates and parsed.candidates[1] then
                     callback(parsed.candidates[1].content.parts[1].text)
+                elseif model_config.provider == "openai" and parsed.choices and parsed.choices[1] then
+                    callback(parsed.choices[1].message.content)
                 else
                     vim.notify("Failed to parse API response", vim.log.levels.ERROR)
                 end
@@ -406,7 +428,7 @@ local function ai_bash()
         end
 
         local prompt = config.prompts.bash .. "\nContext:\n" .. terminal_ctx
-        call_gemini_api(req, prompt, get_model_config("bashcommond"), function(res)
+        call_gemini_api(req, prompt, get_model_config("bashcommand"), function(res)
             local cmd = res:gsub("```%w*", ""):gsub("```", ""):gsub("^%s*", ""):gsub("%s*$", "")
             vim.api.nvim_chan_send(chan, cmd)
         end)
