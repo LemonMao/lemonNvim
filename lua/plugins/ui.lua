@@ -35,6 +35,15 @@ local function transfer_upload_status()
   end
 end
 
+-- Custom function to show current AI model group
+local function ai_model_status()
+    local group = vim.g.ai_current_model_group
+    if group then
+        return "󰚩 " .. group
+    end
+    return ""
+end
+
 -- Custom function to format filename for lualine
 local function custom_filename_formatter()
     local full_path = vim.fn.bufname()
@@ -168,7 +177,12 @@ lualine.setup {
                 }
             }
         },
-        lualine_x = {'encoding', 'fileformat', 'filetype'},
+        lualine_x = {
+            { ai_model_status, color = { fg = "#7aa2f7", gui = "bold" } },
+            'encoding',
+            'fileformat',
+            'filetype'
+        },
         lualine_y = {'progress',
             {
                 function() return transfer_upload_status() end, -- 使用自定义组件函数

@@ -25,11 +25,35 @@ local config = {
             model = "gemini-2.5-flash",
             api_key = os.getenv("GEMINI_API_KEY") or "",
         },
+        ["deepseek-chat"] = {
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+            model = "deepseek-chat",
+            api_key = os.getenv("DEEPSEEK_API_KEY") or "",
+        },
+        ["deepseek-reasoner"] = {
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+            model = "deepseek-reasoner",
+            api_key = os.getenv("DEEPSEEK_API_KEY") or "",
+        },
     },
     defaults = {
         translation = "gemini-2.5-flash-lite",
         explanation = "gemini-2.5-flash",
         bashcommond = "gemini-2.5-flash",
+    },
+    model_groups = {
+        deepseek = {
+            translation = "deepseek-chat",
+            explanation = "deepseek-reasoner",
+            bashcommond = "deepseek-chat",
+            completion = "deepseek-chat",
+        },
+        gemini = {
+            translation = "gemini-2.5-flash-lite",
+            explanation = "gemini-2.5-flash",
+            bashcommond = "gemini-2.5-flash",
+            completion = "gemini-2.5-flash",
+        },
     },
     bash_history_size = 10,
     prompts = {
@@ -58,6 +82,46 @@ local function get_model_config(type)
     local name = config.defaults[type]
     return config.models[name]
 end
+
+-- Initialize global state for status line
+vim.g.ai_current_model_group = "gemini"
+
+local function change_model_group(group_name)
+    local group = config.model_groups[group_name]
+    if not group then
+        local available = table.concat(vim.tbl_keys(config.model_groups), ", ")
+        vim.notify("Unknown model group: " .. group_name .. ". Available: " .. available, vim.log.levels.ERROR)
+        return
+    end
+
+    -- Update internal defaults
+    config.defaults.translation = group.translation
+    config.defaults.explanation = group.explanation
+    config.defaults.bashcommond = group.bashcommond
+
+    -- Update global state for UI
+    vim.g.ai_current_model_group = group_name
+
+    -- Update Minuet plugin model
+    local minuet_cmd = string.format("Minuet change_model openai_fim_compatible:%s", group.completion)
+    local ok, err = pcall(vim.cmd, minuet_cmd)
+    if not ok then
+        vim.notify("Minuet update failed: " .. tostring(err), vim.log.levels.WARN)
+    end
+
+    vim.notify("AI Model group changed to: " .. group_name, vim.log.levels.INFO)
+end
+
+-- Register Ex command
+vim.api.nvim_create_user_command("LLMModelChange", function(opts)
+    change_model_group(opts.args)
+end, {
+    nargs = 1,
+    complete = function()
+        return vim.tbl_keys(config.model_groups)
+    end,
+    desc = "Change AI model group (e.g., deepseek, gemini)"
+})
 
 local function call_gemini_api(text, prompt, model_config, callback)
     if not model_config or model_config.api_key == "" then
@@ -179,7 +243,11 @@ local function get_text_and_range()
         range = { bufnr = bufnr, winid = winid, start_row = s[2]-1, start_col = s[3]-1, end_row = e[2]-1, end_col = ecol }
     end
 
-    if text ~= "" then ai_state.range = range end
+    if text ~= "" then
+        -- Remove trailing whitespace from selected text
+        text = text:gsub("%s*$", "")
+        ai_state.range = range
+    end
     return text ~= "" and text or nil
 end
 
@@ -252,7 +320,8 @@ end
 local function ai_bash()
     local chan = vim.bo.channel
     if chan == 0 then return end
-    local terminal_ctx = table.concat(vim.api.nvim_buf_get_lines(0, -50, -1, false), "\n")
+    -- Get terminal context and trim trailing blank lines
+    local terminal_ctx = table.concat(vim.api.nvim_buf_get_lines(0, -50, -1, false), "\n"):gsub("%s*$", "")
 
     -- Initialize history
     if not ai_state.history then ai_state.history = {} end

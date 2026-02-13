@@ -371,12 +371,12 @@ avanteOpts.opts = {
             end)()
         },
         {
-            name = "plan_feature",
-            description = "Make plan how to implement the feature with requirements",
-            details = "Make plan how to implement the feature with requirements",
+            name = "brainstorm",
+            description = "Brainstroming how to implement the feature with requirements",
+            details = "Brainstroming how to implement the feature with requirements",
             prompt = (function()
-                local role = read_file(ai_path .. "/agents/doc_architect.md")
-                local behavior = read_file(ai_path .. "/commands/plan_feature.md")
+                local role = "You're a professional software architect to brainstorm the design."
+                local behavior = read_file(ai_path .. "/commands/brainstorming.md")
                 return AI_prompt(role, behavior)
             end)()
         },
