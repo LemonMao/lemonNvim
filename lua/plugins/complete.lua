@@ -165,7 +165,7 @@ cmp.setup({
                     fallback()
                 end
             end
-        end),
+        end, {"i", "s"}),
 
         -- LuaSnip Super Tab
         ["<Tab>"] = cmp.mapping(function(fallback)

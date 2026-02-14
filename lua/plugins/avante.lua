@@ -1,6 +1,6 @@
 local utils = require("utils")
 local ai_path = utils.ai_path
-local read_file = utils.read_file
+local read_prompt = utils.read_prompt
 local AI_prompt = utils.AI_prompt
 
 local avanteOpts = {}
@@ -77,7 +77,7 @@ avanteOpts.opts = {
             context_window = 131072, -- 128k, Number of tokens to send to the model for context
             extra_request_body = {
                 temperature = 0.1,
-                max_completion_tokens = 32*1024, -- Increase this to include reasoning tokens (for reasoning models)
+                max_completion_tokens = 8*1024, -- Increase this to include reasoning tokens (for reasoning models)
                 reasoning_effort = "low", -- low|medium|high, only used for reasoning models
             },
         },
@@ -130,7 +130,7 @@ avanteOpts.opts = {
         ask = "<leader>ac",
         new_ask = "<leader>aa",
         zen_mode = "<leader>az",
-        edit = nil,
+        edit = "<leader>ae1",
         refresh = nil,
         focus = nil,
         stop = nil,
@@ -182,6 +182,10 @@ avanteOpts.opts = {
             close_from_input = nil, -- e.g., { normal = "<Esc>", insert = "<C-d>" }
         },
     },
+    selection = {
+        enabled = true,
+        hint_display = "none",
+    },
     windows = {
         -- @type "right" | "left" | "top" | "bottom"
         position = "right", -- the position of the sidebar
@@ -203,7 +207,7 @@ avanteOpts.opts = {
         },
         ask = {
             floating = false, -- Open the 'AvanteAsk' prompt in a floating window
-            start_insert = true, -- Start insert mode when opening the ask window
+            start_insert = false, -- Start insert mode when opening the ask window
             border = "rounded",
             ---@type "ours" | "theirs"
             focus_on_apply = "theirs", -- which diff to focus after applying
@@ -255,19 +259,15 @@ avanteOpts.opts = {
         provider = "telescope",
         exclude_auto_select = { "NvimTree" },
     },
-    system_prompt = "YYYY",
+    system_prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出",
     shortcuts = {
         -- Roles
         {
-            name = "system_prompt",
+            name = "assistant",
             description = "Apply system prompt for all sessions",
             details = "Apply system prompt for all sessions",
             prompt = (function()
-                local prompt = read_file(ai_path .. "/agents/general.md")
-                if not prompt or prompt == "" then
-                    prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出"
-                end
-                return prompt
+                return AI_prompt(nil, nil, true)
             end)()
         },
         {
@@ -275,8 +275,8 @@ avanteOpts.opts = {
             description = "Work as a professional CPP language programmer",
             details = "Work as a professional CPP language programmer",
             prompt = (function()
-                local content = read_file(ai_path .. "/agents/cpp_pro.md")
-                return "Work as a professional CPP programmer as below." .. content .. "\n"
+                local principles = read_prompt(ai_path .. "/agents/cpp_pro.md")
+                return AI_prompt(principles, nil, false)
             end)()
         },
         {
@@ -284,8 +284,8 @@ avanteOpts.opts = {
             description = "Work as a professional C language programmer",
             details = "Work as a professional C programmer",
             prompt = (function()
-                local content = read_file(ai_path .. "/agents/c_pro.md")
-                return "Work as a professional C language programmer as below." .. content .. "\n"
+                local principles = read_prompt(ai_path .. "/agents/c_pro.md")
+                return AI_prompt(principles, nil, false)
             end)()
         },
         {
@@ -293,8 +293,8 @@ avanteOpts.opts = {
             description = "Work as a professional Python language programmer",
             details = "Work as a professional Python programmer",
             prompt = (function()
-                local content = read_file(ai_path .. "/agents/python_pro.md")
-                return "Work as a professional Python language programmer as below." .. content .. "\n"
+                local principles = read_prompt(ai_path .. "/agents/python_pro.md")
+                return AI_prompt(principles, nil, false)
             end)()
         },
         {
@@ -302,17 +302,17 @@ avanteOpts.opts = {
             description = "Work as a professional analyzer",
             details = "Work as a professional analyzer",
             prompt = (function()
-                local content = read_file(ai_path .. "/agents/analyzer.md")
-                return "Work as a professional analyzer as below." .. content .. "\n"
+                local principles = read_prompt(ai_path .. "/agents/analyzer.md")
+                return AI_prompt(principles, nil, false)
             end)()
         },
         {
-            name = "role_docarchitect",
+            name = "role_architect",
             description = "Work as a professional doc architect",
             details = "Work as a professional doc architect",
             prompt = (function()
-                local content = read_file(ai_path .. "/agents/doc_architect.md")
-                return "Work as a professional doc architect as below." .. content .. "\n"
+                local principles = read_prompt(ai_path .. "/agents/architect.md")
+                return AI_prompt(principles, nil, false)
             end)()
         },
         {
@@ -320,8 +320,8 @@ avanteOpts.opts = {
             description = "Work as a professional reviewer",
             details = "Work as a professional reviewer",
             prompt = (function()
-                local content = read_file(ai_path .. "/agents/reviewer.md")
-                return "Work as a professional reviewer as below." .. content .. "\n"
+                local principles = read_prompt(ai_path .. "/agents/reviewer.md")
+                return AI_prompt(principles, nil, false)
             end)()
         },
         -- Code
@@ -330,17 +330,17 @@ avanteOpts.opts = {
             description = "Modify or implement features with requirements",
             details = "Modify selected code or implement features across files",
             prompt = (function()
-                local role = read_file(ai_path .. "/agents/developer.md")
+                local principles = read_prompt(ai_path .. "/agents/developer.md")
                 local behavior = "1. If code is selected, focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
                 "2. You must strictly provide the response in the following format:\n" ..
                 "## code change\n" ..
                 "[The modified or new code. Use necessary in-line English comments.]\n" ..
                 "## explaination\n" ..
                 "[A detail summary of the changes, benefits, and potential trade-offs.]\n" ..
-                "3. The first priority requirements are from User. And then follow the previous design/review plan" ..
-                "4. If you don't find any useful requirements to implement the code, ask for it" ..
-                "4. Ensure the code follows best practices and the explanation is concise"
-                return AI_prompt(role, behavior)
+                "3. The first priority requirements are from User. And then follow the previous design/review plan\n" ..
+                "4. If you don't find any useful requirements to implement the code, ask for it\n" ..
+                "5. Ensure the code follows best practices and the explanation is concise"
+                return AI_prompt(principles, behavior)
             end)()
         },
         {
@@ -348,7 +348,7 @@ avanteOpts.opts = {
             description = "Explain the code with requirements",
             details = "Explain the code with requirements",
             prompt = (function()
-                local role = read_file(ai_path .. "/agents/doc_architect.md")
+                local principles = read_prompt(ai_path .. "/agents/architect.md")
                 local behavior = "1. Explan the selected code as following output:\n" ..
                     "## Summary\n" ..
                     "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
@@ -357,7 +357,7 @@ avanteOpts.opts = {
                     "## Example\n" ..
                     "[Use an example to illustrate the workflow of it or how to use it]\n" ..
                     "2. If user doesn't provide the selected code, ask for it.\n"
-                return AI_prompt(role, behavior)
+                return AI_prompt(principles, behavior)
             end)()
         },
         {
@@ -365,10 +365,10 @@ avanteOpts.opts = {
             description = "Review the code with requirements",
             details = "Review the code with requirements",
             prompt = (function()
-                local role = read_file(ai_path .. "/agents/reviewer.md")
+                local principles = read_prompt(ai_path .. "/agents/reviewer.md")
                 local behavior = "1. If user provides the selected code, just review this part code don't touch others\n" ..
                     "2. If user doesn't provide the selected code, review all the files\n"
-                return AI_prompt(role, behavior)
+                return AI_prompt(principles, behavior)
             end)()
         },
         {
@@ -376,9 +376,9 @@ avanteOpts.opts = {
             description = "Brainstroming how to implement the feature with requirements",
             details = "Brainstroming how to implement the feature with requirements",
             prompt = (function()
-                local role = "You're a professional software architect to brainstorm the design."
-                local behavior = read_file(ai_path .. "/commands/brainstorming.md")
-                return AI_prompt(role, behavior)
+                local principles = read_prompt(ai_path .. "/agents/architect.md")
+                local behavior = read_prompt(ai_path .. "/commands/brainstorming.md")
+                return AI_prompt(principles, behavior)
             end)()
         },
         -- common
@@ -387,7 +387,7 @@ avanteOpts.opts = {
             description = "Explain the target/question simply",
             details = "Explain the target simply",
             prompt = (function()
-                local role = "You're a professional software engineer."
+                local principles = read_prompt(ai_path .. "/agents/architect.md")
                 local behavior = "1. Explan the target/question as following output:\n" ..
                     "## What's it?\n" ..
                     "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
@@ -396,8 +396,7 @@ avanteOpts.opts = {
                     "## Important components\n" ..
                     "[List important data structures and functions and comment for what they used for.]\n" ..
                     "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it."
-                local user_prompt = "The target/question is: "
-                return AI_prompt(role, behavior, user_prompt)
+                return AI_prompt(principles, behavior)
             end)()
         },
         {
@@ -405,7 +404,7 @@ avanteOpts.opts = {
             description = "Explain the target/question detaily",
             details = "Explain the target detaily",
             prompt = (function()
-                local role = "You're a professional software engineer."
+                local principles = read_prompt(ai_path .. "/agents/architect.md")
                 local behavior = "1. Explan the target/question as following output:\n" ..
                     "## What's it?\n" ..
                     "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
@@ -419,16 +418,18 @@ avanteOpts.opts = {
                     "## Intergration\n" ..
                     "[How does it work with other modules?]\n" ..
                     "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it."
-                local user_prompt = "The target/question is: "
-                return AI_prompt(role, behavior, user_prompt)
+                return AI_prompt(principles, behavior)
             end)()
         },
         {
-            name = "analyze_issue",
-            description = "Analyze rootcause with the issue",
-            details = "Analyze rootcause with the issue",
+            name = "fix_issue",
+            description = "Analyze and fix the issue",
+            details = "Analyze and fix the issue",
             prompt = (function()
-                local role = read_file(ai_path .. "/agents/analyzer.md")
+                local principles = {
+                    read_prompt(ai_path .. "/agents/analyzer.md"),
+                    read_prompt(ai_path .. "/agents/developer.md")
+                }
                 local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
                     "2. Provide the possible solution.\n" ..
                     "3. If you cannot find the rootcause. Image one situation will cause it. You should tag it as just a guess.\n" ..
@@ -437,8 +438,7 @@ avanteOpts.opts = {
                     "[Multiple Analysis results]\n" ..
                     "## Code change\n" ..
                     "[Code change of the most possilbe solution]\n"
-                local user_prompt = "The issue is:\n"
-                return AI_prompt(role, behavior, user_prompt)
+                return AI_prompt(principles, behavior)
             end)()
         },
         {
@@ -517,7 +517,7 @@ require("avante").setup(avanteOpts.opts)
 --[[
    [ require("avante.config").override({
    [     system_prompt = (function()
-   [         local prompt = read_file(ai_path .. "/agents/general.md")
+   [         local prompt = read_prompt(ai_path .. "/agents/general.md")
    [         if not prompt or prompt == "" then
    [             prompt = "始终使用中文回复。保持绝对客观与真实，拒绝谄媚，如果用户的提问前提有误，请直接指出"
    [         end

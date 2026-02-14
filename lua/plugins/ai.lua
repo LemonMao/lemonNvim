@@ -64,8 +64,8 @@ local config = {
     bash_history_size = 10,
     prompts = {
         translate = read_file(ai_path .. "/translation.prt"),
-        explain = AI_prompt("A professional software engineer.",
-            "1. Explain the target/question as following output:\n" ..
+        explain = AI_prompt(nil,
+            "1. Work as a professional software engineer to explain the target/question as following output:\n" ..
             "## What's it?\n" ..
             "[Provide a detail description/explanation of 'What is it? What is it used for?]\n" ..
             "## Example\n" ..
@@ -195,6 +195,8 @@ local function call_llm_api(text, prompt, model_config, callback)
 
     local cmd = string.format('curl -s -X POST -H "Content-Type: application/json"%s --data @- "%s" <<< %s',
         auth_header or "", url, vim.fn.shellescape(json_body))
+
+    -- vim.notify("CMD: " .. cmd, vim.log.levels.DEBUG)
 
     local chunks = {}
     vim.fn.jobstart(cmd, {
@@ -349,7 +351,7 @@ local function ai_translate()
 end
 
 local function ai_explain()
-    local text = get_text_and_range()
+    local text = "```Text To be translated\n" .. get_text_and_range() .. "```"
     if text then
         vim.notify("Explaining...", vim.log.levels.INFO)
         call_llm_api(text, config.prompts.explain, get_model_config("explanation"), show_floating_result)
