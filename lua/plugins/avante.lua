@@ -431,11 +431,12 @@ avanteOpts.opts = {
                     read_prompt(ai_path .. "/agents/developer.md")
                 }
                 local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                    "2. Provide the possible solution.\n" ..
-                    "3. If you cannot find the rootcause. Image one situation will cause it. You should tag it as just a guess.\n" ..
-                    "4. Output format:\n" ..
+                    "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need.\
+                     This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
+                    "3. If you don't need other information, find solution how to fix it." ..
+                    "4. Output format should be:\n" ..
                     "## Analysis\n" ..
-                    "[Multiple Analysis results]\n" ..
+                    "[Multiple Analysis results report as Principles describe]\n" ..
                     "## Code change\n" ..
                     "[Code change of the most possilbe solution]\n"
                 return AI_prompt(principles, behavior)

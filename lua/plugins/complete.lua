@@ -42,11 +42,12 @@ local kind_icons = {
 cmp.setup({
     enabled = function()
         local disabled = false
-        -- 在录制宏时, 在执行宏时, 在注释中禁用
-        -- 在“提示符”缓冲区, disabled = disabled or (vim.api.nvim_get_option_value('buftype', { buf = 0 }) == 'prompt')
         disabled = disabled or (vim.fn.reg_recording() ~= '')
         disabled = disabled or (vim.fn.reg_executing() ~= '')
-        -- disabled = disabled or require('cmp.config.context').in_treesitter_capture('comment')
+        -- 调试：取消下面行的注释以在通知中显示缓冲区属性
+        -- local buftype = vim.api.nvim_get_option_value('buftype', { buf = 0 })
+        -- local filetype = vim.api.nvim_get_option_value('filetype', { buf = 0 })
+        -- vim.notify(string.format("cmp enabled: buftype=%s, filetype=%s, disabled=%s", buftype, filetype, disabled), vim.log.levels.INFO)
         return not disabled
     end,
     snippet = {
@@ -241,8 +242,128 @@ cmp.setup.cmdline(':', {
     mapping = cmp.mapping.preset.cmdline(),
     sources = cmp.config.sources({
         { name = 'path' }
-    }, {
-            { name = 'cmdline' }
-        }),
+    },
+    {
+        { name = 'cmdline' }
+    }),
     matching = { disallow_symbol_nonprefix_matching = false }
+})
+
+local function debug_cmp_detailed()
+    local buftype = vim.api.nvim_get_option_value('buftype', {buf=0})
+    local filetype = vim.api.nvim_get_option_value('filetype', {buf=0})
+    local disabled = (vim.fn.reg_recording() ~= '') or (vim.fn.reg_executing() ~= '')
+    local enabled = not disabled
+    vim.notify(string.format("cmp debug detailed: buftype=%s, filetype=%s, enabled=%s", buftype, filetype, enabled), vim.log.levels.INFO)
+    local status, cmp = pcall(require, "cmp")
+    if status then
+        -- 尝试获取配置中的源
+        local config = cmp.get_config()
+        if config and config.sources then
+            vim.notify(string.format("Global sources count: %d", #config.sources), vim.log.levels.INFO)
+            for i, source in ipairs(config.sources) do
+                vim.notify(string.format("Global source [%d]: %s", i, vim.inspect(source)), vim.log.levels.INFO)
+            end
+        else
+            vim.notify("No global sources found in config", vim.log.levels.INFO)
+        end
+        -- 尝试获取当前缓冲区的源，通过 cmp.get_active_sources 如果存在的话
+        local ok, active_sources = pcall(cmp.get_active_sources)
+        if ok then
+            vim.notify(string.format("Active sources count: %d", #active_sources), vim.log.levels.INFO)
+            for _, source in ipairs(active_sources) do
+                vim.notify(string.format("Active source: %s", source.name), vim.log.levels.INFO)
+            end
+        else
+            vim.notify("Cannot get active sources (function not available)", vim.log.levels.INFO)
+        end
+        -- 尝试获取当前缓冲区的缓冲区特定配置
+        local buf_config = cmp.get_buffer_config()
+        if buf_config and buf_config.sources then
+            vim.notify(string.format("Buffer-specific sources count: %d", #buf_config.sources), vim.log.levels.INFO)
+            for i, source in ipairs(buf_config.sources) do
+                vim.notify(string.format("Buffer source [%d]: %s", i, vim.inspect(source)), vim.log.levels.INFO)
+            end
+        end
+    else
+        vim.notify("cmp module not loaded", vim.log.levels.ERROR)
+    end
+end
+
+
+vim.api.nvim_create_user_command('CmpDebugDetailed', debug_cmp_detailed, {
+    desc = 'Detailed debug nvim-cmp sources and availability',
+})
+
+local function add_sources_to_current_buffer()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local filetype = vim.api.nvim_get_option_value('filetype', { buf = bufnr })
+
+    if filetype ~= 'AvanteInput' then
+        vim.notify("当前缓冲区不是 AvanteInput，无需添加额外源", vim.log.levels.WARN)
+        return
+    end
+
+    -- 获取当前的缓冲区配置
+    local status, cmp = pcall(require, "cmp")
+    if not status then
+        vim.notify("无法加载 cmp 模块", vim.log.levels.ERROR)
+        return
+    end
+
+    -- 尝试获取当前的源配置
+    local current_sources = {}
+    local ok, config = pcall(cmp.get_config)
+    if ok and config and config.sources then
+        -- 复制全局源
+        for _, source in ipairs(config.sources) do
+            table.insert(current_sources, source)
+        end
+    end
+
+    -- 添加我们需要的额外源
+    local extra_sources = {
+        { name = 'luasnip' },
+        { name = 'nvim_lsp' },
+        { name = 'buffer' },
+        { name = 'path' }
+    }
+
+    -- 合并源，避免重复
+    for _, extra in ipairs(extra_sources) do
+        local exists = false
+        for _, current in ipairs(current_sources) do
+            if current.name == extra.name then
+                exists = true
+                break
+            end
+        end
+        if not exists then
+            table.insert(current_sources, extra)
+        end
+    end
+
+    -- 设置新的缓冲区配置
+    cmp.setup.buffer({
+        sources = current_sources
+    })
+
+    vim.notify(string.format("已为 AvanteInput 添加额外补全源，当前共 %d 个源", #current_sources), vim.log.levels.INFO)
+end
+
+-- 自动命令：当进入 AvanteInput 缓冲区时自动添加额外源
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'AvanteInput',
+    callback = function()
+        -- 延迟执行，确保 Avante 插件先设置好它的源
+        vim.defer_fn(function()
+            add_sources_to_current_buffer()
+        end, 100)
+    end,
+    desc = '为 AvanteInput 添加额外补全源'
+})
+
+-- 用户命令：手动触发添加额外源
+vim.api.nvim_create_user_command('CmpAddExtraSources', add_sources_to_current_buffer, {
+    desc = '为当前缓冲区添加额外的补全源'
 })
