@@ -87,6 +87,16 @@ require("lazy").setup({
             "nvim-lua/plenary.nvim",
         },
     },
+    {
+        -- https://codecompanion.olimorris.dev/installation
+        "olimorris/codecompanion.nvim",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "nvim-treesitter/nvim-treesitter",
+            "ravitemer/codecompanion-history.nvim",
+            "franco-ruggeri/codecompanion-lualine.nvim",
+        },
+    },
     --
     -- ############
     -- UI - ui.lua
@@ -129,9 +139,9 @@ require("lazy").setup({
         'MeanderingProgrammer/render-markdown.nvim',
         dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' },
         opts = {
-            file_types = { "markdown", "Avante" },
+            file_types = { "markdown", "Avante", "codecompanion" },
         },
-        ft = { "markdown", "Avante" },
+        ft = { "markdown", "Avante", "codecompanion" },
     },
     {
         'akinsho/bufferline.nvim',

@@ -15,7 +15,8 @@ require("plugins.minuet")
 require("plugins.ai")
 require("plugins.complete")
 require("plugins.gtags")
-require("plugins.avante")
+-- require("plugins.avante")
+require("plugins.codecompanion")
 require("plugins.async-run")
 
 -- Codeium / Windsurf

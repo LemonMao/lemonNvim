@@ -13,57 +13,11 @@ local open_with_trouble = require("trouble.sources.telescope").open
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 
--- 调试函数：查看当前选择状态
-local function debug_selection(prompt_bufnr)
-    local picker = action_state.get_current_picker(prompt_bufnr)
-    local selections = picker:get_multi_selection()
-    vim.notify("当前选择了 " .. #selections .. " 个项目", vim.log.levels.INFO)
-    for i, entry in ipairs(selections) do
-        print(string.format("选择 %d: ", i))
-        if entry.path then
-            print("  路径: " .. entry.path)
-        end
-        if entry.value then
-            print("  值: " .. tostring(entry.value))
-        end
-        if entry.bufnr then
-            print("  缓冲区: " .. entry.bufnr)
-        end
-    end
-end
-
 -- 自定义多选打开函数
 local function multi_open(prompt_bufnr)
     local picker = action_state.get_current_picker(prompt_bufnr)
     local selections = picker:get_multi_selection()
-
-    -- 调试信息
-    vim.notify("multi_open 被调用，选择了 " .. #selections .. " 个项目", vim.log.levels.INFO)
-
-    if #selections == 0 then
-        -- 如果没有多选，执行默认操作
-        vim.notify("没有多选，执行默认操作", vim.log.levels.INFO)
-        actions.select_default(prompt_bufnr)
-    else
-        -- 关闭 Telescope 窗口
-        actions.close(prompt_bufnr)
-
-        -- 对每个选中的项目执行操作
-        for _, entry in ipairs(selections) do
-            if entry.path then
-                -- 如果是文件，在新标签页中打开
-                vim.cmd("tabnew " .. vim.fn.fnameescape(entry.path))
-                vim.notify("打开文件: " .. entry.path, vim.log.levels.INFO)
-            elseif entry.value then
-                -- 如果是其他类型的结果
-                vim.notify("选中: " .. tostring(entry.value), vim.log.levels.INFO)
-            elseif entry.bufnr then
-                -- 如果是缓冲区，切换到该缓冲区
-                vim.cmd("buffer " .. entry.bufnr)
-                vim.notify("切换到缓冲区: " .. entry.bufnr, vim.log.levels.INFO)
-            end
-        end
-    end
+    actions.select_default(prompt_bufnr)
 end
 
 telescope.setup({
@@ -117,18 +71,9 @@ telescope.setup({
                 ["<c-t>"] = open_with_trouble,
 
                 -- 多选功能快捷键
-                ["<C-i>"] = actions.toggle_selection,      -- 切换选择
-                ["<C-a>"] = actions.add_selectiong             -- 添加到选择
-                ["<C-s>"] = actions.select_all,                -- 全选
-                ["<C-u>"] = actions.drop_all,                  -- 取消全选
-
-                -- 调试快捷键
-                ["<F2>"] = debug_selection,                    -- 查看选择状态
-
-                -- 自定义回车行为（多选打开）
+                ["<C-a>"] = actions.add_selection,             -- 添加到选择
+                ["<C-x>"] = actions.drop_all,                  -- 取消全选
                 ["<CR>"] = multi_open,
-
-                -- 其他快捷键
                 ["<Tab>"] = actions.toggle_selection + actions.move_selection_worse,
                 ["<S-Tab>"] = actions.toggle_selection + actions.move_selection_better,
             },
@@ -138,12 +83,6 @@ telescope.setup({
                 ["<space>"] = actions.toggle_selection,      -- 切换选择
                 ["a"] = actions.add_selection,             -- 添加到选择
                 ["x"] = actions.remove_selection,          -- 从选择中移除
-                ["<C-a>"] = actions.select_all,            -- 全选
-                ["<C-u>"] = actions.drop_all,              -- 取消全选
-
-                -- 调试快捷键
-                ["<F2>"] = debug_selection,                -- 查看选择状态
-
                 ["<CR>"] = multi_open,
                 ["q"] = actions.close,
                 ["<Esc>"] = actions.close,

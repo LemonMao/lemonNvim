@@ -569,3 +569,6 @@ vim.keymap.set("v", "<leader>aes", ai_explain, { desc = "AI: Simple Explain just
 vim.keymap.set("n", "<leader>aef", ai_explain_function, { desc = "AI: CallGraph Explain" })
 vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
 vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })
+
+vim.keymap.set({"i", "n"}, "<A-a>", "<Esc>:CodeCompanionChat Toggle<CR>", { desc = "Avante: Toggle sidebar", silent=true })
+vim.keymap.set("v", "<leader>ac", ":CodeCompanionChat<CR>", { desc = "Avante: Toggle sidebar", silent=true })

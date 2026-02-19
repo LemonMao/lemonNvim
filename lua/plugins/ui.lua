@@ -178,9 +178,8 @@ lualine.setup {
             }
         },
         lualine_x = {
+            "codecompanion",
             { ai_model_status, color = { fg = "#7aa2f7", gui = "bold" } },
-            'encoding',
-            'fileformat',
             'filetype'
         },
         lualine_y = {'progress',
