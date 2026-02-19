@@ -448,10 +448,11 @@ map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR><Cmd>BufferLineM
 -- ## ------------------------------ ##
 -- Avante
 -- map({ "n", "v" }, "<leader>aa", ":AvanteAsk <CR>", { desc = "open dir tree" })
-map("n", "<leader>al", ":AvanteClear<CR>", { desc = "Avante: Clear the chat box content" })
-map("n", "<A-a>", ":AvanteToggle<CR>", { desc = "Avante: Toggle sidebar" })
-map("i", "<A-a>", "<Esc>:AvanteToggle <CR>", { desc = "Avante: Toggle sidebar" })
-map('n', '<leader>cmm', ':lua require("codeium").set_option("virtual_text.manual", true)<CR>', { desc = 'Codeium Manual Mode On' })
+--[[ TODO: remove later
+   [ map("n", "<leader>al", ":AvanteClear<CR>", { desc = "Avante: Clear the chat box content" })
+   [ map("n", "<A-a>", ":AvanteToggle<CR>", { desc = "Avante: Toggle sidebar" })
+   [ map("i", "<A-a>", "<Esc>:AvanteToggle <CR>", { desc = "Avante: Toggle sidebar" })
+   ]]
 
 -- ## ------------------------------ ##
 -- ## UI
@@ -466,6 +467,7 @@ map("n", "<A-M>", toggle_noice_history, { desc = "Noice: Toggle message history"
 -- Readable, 换行
 map("x", "<leader>ow", ":set wrap!<CR>", { desc = "Toggle line wrapping" })
 
+-- ## ------------------------------ ##
 -- ## Search
 -- ## ------------------------------ ##
 -- Telescope, find files/global grep
@@ -486,34 +488,6 @@ map({"n", "x"}, "scd", function() do_telescope_search('grep_string', 'prompt_dir
 map({"n", "x"}, "scg", function() do_telescope_search('grep_string', 'pwd') end, { desc = "Telescope: Searches for the string under your cursor in your PWD" })
 map({"n", "x"}, "scf", function() do_telescope_search('grep_string', 'open_files') end, { desc = "Telescope: Search string under cursor in open buffers" })
 map({"n", "x"}, "sch", search_man_pages_with_cursor_word, { desc = "Telescope: Search man pages for word under cursor" })
-
--- Telescope 列表中 插入模式快捷键
-local open_with_trouble = require("trouble.sources.telescope").open
--- Use this to add more results without clearing the trouble list
--- local add_to_trouble = require("trouble.sources.telescope").add
-
-pluginKeys.telescopeList = {
-    i = {
-        -- 上下移动
-        ["<C-j>"] = "move_selection_next",
-        ["<C-k>"] = "move_selection_previous",
-        ["<Down>"] = "move_selection_next",
-        ["<Up>"] = "move_selection_previous",
-        -- 历史记录
-        ["<C-n>"] = "cycle_history_next",
-        ["<C-p>"] = "cycle_history_prev",
-        -- 关闭窗口
-        ["<C-c>"] = "close",
-        -- 预览窗口上下滚动
-        ["<A-u>"] = "preview_scrolling_up",
-        ["<A-d>"] = "preview_scrolling_down",
-        ["g?"] = "which_key",
-        ["<C-x>"] = "delete_buffer",
-        ["<ESC>"] = "close",
-        ["<c-t>"] = open_with_trouble,
-    },
-    n = { ["<c-t>"] = open_with_trouble },
-}
 
 -- ## ------------------------------ ##
 -- ## LSP
