@@ -199,8 +199,8 @@ require("codecompanion").setup({
                 },
                 send = {
                     modes = {
-                        n = { "<CR>", "<C-d>" },
-                        i = "<C-d>",
+                        n = { "<CR>", "<C-CR>" },
+                        i = "<C-CR>",
                     },
                     callback = function(chat)
                         vim.cmd("stopinsert")
@@ -359,7 +359,7 @@ require("codecompanion").setup({
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                            behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
                             behavior = behavior .. "3. The current file is #{buffer}\n" .. selected_code .. "\n"
                         end
@@ -379,7 +379,6 @@ require("codecompanion").setup({
                 placement = "new",
                 stop_context_insertion = true,
                 ignore_system_prompt = true,
-                intro_message = "Modify code or implement features with requirements",
                 is_slash_cmd = false,
                 is_workflow = false,
             },
@@ -401,7 +400,7 @@ require("codecompanion").setup({
                         "### Explaination\n" ..
                         "[A detail summary of the changes, benefits, and potential trade-offs.]\n" ..
                         "3. If you don't find any useful requirements to implement the code, ask for it\n" ..
-                        "4. Use @{insert_edit_into_file} to apply the change.\n"..
+                        "4. Use @{insert_edit_into_file} to apply the change.\n"
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
@@ -445,12 +444,84 @@ require("codecompanion").setup({
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                            behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "5. The current file is #{buffer}\n" .. selected_code .. "\n"
+                            behavior = behavior .. "3. The current file is #{buffer}\n" .. selected_code .. "\n"
                         end
 
                         behavior = behavior .. "\nUser requirements:\n"
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Brainstorm"] = {
+            interaction = "chat",
+            description = "Brainstroming how to implement the feature with requirements",
+            opts = {
+                alias = "Brainstorm",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                stop_context_insertion = true,
+                ignore_system_prompt = true,
+                is_slash_cmd = false,
+                is_workflow = false,
+            },
+            prompts = {
+                {
+                    role = "system",
+                    content = function()
+                        local principles = read_prompt(ai_path .. "/agents/architect.md")
+                        return AI_prompt(principles, nil, true)
+                    end,
+                },
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = read_prompt(ai_path .. "/commands/brainstorming.md")
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Fix issue"] = {
+            interaction = "chat",
+            description = "Analyze and fix the issue",
+            opts = {
+                alias = "fix_issue",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                stop_context_insertion = true,
+                ignore_system_prompt = true,
+                is_slash_cmd = false,
+                is_workflow = false,
+            },
+            prompts = {
+                {
+                    role = "system",
+                    content = function()
+                        local principles = {
+                            read_prompt(ai_path .. "/agents/analyzer.md"),
+                            read_prompt(ai_path .. "/agents/developer.md")
+                        }
+                        return AI_prompt(principles, nil, true)
+                    end,
+                },
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = read_prompt(ai_path .. "/commands/brainstorming.md")
+                        local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
+                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need.\
+                         This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
+                        "3. If you don't need other information, find solution how to fix it." ..
+                        "4. Finianlly output the result as below:\n" ..
+                        "## Analysis\n" ..
+                        "[Multiple Analysis results report as Principles describe]\n" ..
+                        "## Code change\n" ..
+                        "[Code change of the most possilbe solution]\n"
                         return behavior
                     end,
                 },
