@@ -196,7 +196,7 @@ local function call_llm_api(text, prompt, model_config, callback)
     local cmd = string.format('curl -s -X POST -H "Content-Type: application/json"%s --data @- "%s" <<< %s',
         auth_header or "", url, vim.fn.shellescape(json_body))
 
-    -- vim.notify("CMD: " .. cmd, vim.log.levels.DEBUG)
+    vim.notify("CMD: " .. cmd, vim.log.levels.DEBUG)
 
     local chunks = {}
     vim.fn.jobstart(cmd, {
@@ -345,14 +345,16 @@ end
 local function ai_translate()
     local text = get_text_and_range()
     if text then
+        text = utils.wrap_tag(text)
         vim.notify("Translating...", vim.log.levels.INFO)
         call_llm_api(text, config.prompts.translate, get_model_config("translation"), show_floating_result)
     end
 end
 
 local function ai_explain()
-    local text = "```Text To be translated\n" .. get_text_and_range() .. "```"
+    local text = get_text_and_range()
     if text then
+        text = utils.wrap_tag(text)
         vim.notify("Explaining...", vim.log.levels.INFO)
         call_llm_api(text, config.prompts.explain, get_model_config("explanation"), show_floating_result)
     end
@@ -564,11 +566,14 @@ vim.keymap.set("t", "<C-g>", ai_bash, { desc = "AI: Generate Bash Command" })
 vim.keymap.set("i", "<C-g>", ai_completion, { desc = "AI: Trigger completion" })
 vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
 
-vim.keymap.set("v", "<leader>ae", ai_avante_explain, { desc = "AI: Avante Explain with buffer content" })
+-- vim.keymap.set("v", "<leader>ae", ai_cc_explain, { desc = "AI: CodeCompanion Explain with buffer content" })
 vim.keymap.set("v", "<leader>aes", ai_explain, { desc = "AI: Simple Explain just for selected content" })
 vim.keymap.set("n", "<leader>aef", ai_explain_function, { desc = "AI: CallGraph Explain" })
-vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
-vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })
+-- vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
+-- vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })
 
-vim.keymap.set({"i", "n"}, "<A-a>", "<Esc>:CodeCompanionChat Toggle<CR>", { desc = "Avante: Toggle sidebar", silent=true })
-vim.keymap.set("v", "<leader>ac", ":CodeCompanionChat<CR>", { desc = "Avante: Toggle sidebar", silent=true })
+vim.keymap.set({"i", "n"}, "<A-a>", "<Esc><cmd>CodeCompanionChat Toggle<CR>", { desc = "AI: Toggle sidebar", silent=true })
+vim.keymap.set({"n", "v"}, "<leader>aa", "<cmd>CodeCompanionChat<CR>", { desc = "AI: New Ask for selected content", silent=true })
+vim.keymap.set("v", "<leader>ae", "<cmd>CodeCompanion /explain_code<CR><CR>", { desc = "AI: CodeCompanion Explain with buffer content" })
+vim.keymap.set("v", "<leader>ac", "<cmd>CodeCompanionChat Add<CR>", { desc = "AI: Append Ask for selected content", silent=true })
+vim.keymap.set({ "n", "v" }, "sa", "<cmd>CodeCompanionActions<cr>", { noremap = true, silent = true })

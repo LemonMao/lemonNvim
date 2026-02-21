@@ -103,4 +103,18 @@ function M.AI_prompt(principles, behavior, system_prompt)
     return "{\n" .. table.concat(parts, ",\n") .. "\n}"
 end
 
+--- Wrap text with tags to help LLM identify the core content
+function M.wrap_tag(text, tag)
+    if not text or text == "" then return text end
+    tag = tag or "target"
+    return string.format("<%s>%s</%s>", tag, text, tag)
+end
+
+--- Wrap code with Markdown code block syntax
+function M.wrap_code_with_md(code, filetype)
+    if not code or code == "" then return "" end
+    filetype = filetype or ""
+    return string.format("```%s\n%s\n```", filetype, code)
+end
+
 return M

@@ -1,3 +1,10 @@
+-- External functions statement
+local utils = require("utils")
+local ai_path = utils.ai_path
+local read_prompt = utils.read_prompt
+local AI_prompt = utils.AI_prompt
+
+
 -- ########################
 -- CodeCompanionChat Spinner
 -- ########################
@@ -98,9 +105,6 @@ init()
 -- ########################
 -- CodeCompanion SetUp
 -- ########################
--- Usage:
--- You can run :checkhealth codecompanion to verify that all requirements are met.
--- How to delete the context? Just delete it in blockquote.
 require("codecompanion").setup({
     adapters = {
         http = {
@@ -178,6 +182,13 @@ require("codecompanion").setup({
                         },
                     },
                 },
+                ["rules"] = {
+                    keymaps = {
+                        modes = {
+                            n = { "sr"},
+                        },
+                    },
+                },
             },
             keymaps = {
                 completion = {
@@ -207,17 +218,15 @@ require("codecompanion").setup({
                 -- model = "gemini-3-flash-preview",
                 model = "gemini-2.5-flash-lite",
             },
-            inline = {
-                keymaps = {
-                    accept_change = {
-                        modes = { n = "ca" }, -- Remember this as DiffAccept
-                    },
-                    reject_change = {
-                        modes = { n = "cr" }, -- Remember this as DiffReject
-                    },
-                    always_accept = {
-                        modes = { n = "cy" }, -- Remember this as DiffYolo
-                    },
+            keymaps = {
+                accept_change = {
+                    modes = { n = "ca" }, -- Remember this as DiffAccept
+                },
+                reject_change = {
+                    modes = { n = "cr" }, -- Remember this as DiffReject
+                },
+                always_accept = {
+                    modes = { n = "cy" }, -- Remember this as DiffYolo
                 },
             },
         },
@@ -237,6 +246,11 @@ require("codecompanion").setup({
         },
     },
     display = {
+        action_palette = {
+            opts = {
+                show_preset_prompts = false
+            }
+        },
         diff = {
             provider_opts = {
                 inline = {
@@ -256,12 +270,199 @@ require("codecompanion").setup({
         log_level = "DEBUG",
         language = "Chinese", -- The language used for LLM responses
     },
+    rules = {
+        role_cpp = {
+            description = "A professional CPP language expert",
+            files = {
+                ai_path .. "/agents/cpp_pro.md",
+            },
+        },
+        role_c = {
+            description = "A professional C language expert",
+            files = {
+                ai_path .. "/agents/c_pro.md",
+            },
+        },
+        role_python = {
+            description = "A professional Python language expert",
+            files = {
+                ai_path .. "/agents/python_pro.md",
+            },
+        },
+        role_analyzer = {
+            description = "A professional analyzer",
+            files = {
+                ai_path .. "/agents/analyzer.md",
+            },
+        },
+        role_architect = {
+            description = "A professional doc architect",
+            files = {
+                ai_path .. "/agents/architect.md",
+            },
+        },
+        role_reviewer = {
+            description = "A professional reviewer",
+            files = {
+                ai_path .. "/agents/reviewer.md",
+            },
+        },
+    },
+    prompt_library = {
+        -- Use `:CodeCompanionActions refresh` to apply the new added prompt
+        --[[
+           [ markdown = {
+           [     dirs = {
+           [         "~/.config/nvim/AI/prompts",
+           [     },
+           [ },
+           ]]
+        ["Explain code"] = {
+            interaction = "chat",
+            description = "Explain the code with requirements",
+            opts = {
+                alias = "explain_code",
+                auto_submit = false,
+                modes = { "v" },
+                placement = "new",
+                stop_context_insertion = true,
+                ignore_system_prompt = true,
+                -- intro_message = "Explain the code with requirements",
+                is_slash_cmd = false,
+                is_workflow = false,
+                --[[
+                   [ pre_hook = nil,
+                   [ rules = nil,
+                   [ stop_context_insertion = nil,
+                   [ user_prompt = nil,
+                   ]]
+            },
+            prompts = {
+                {
+                    role = "system",
+                    content = function()
+                        local principles = read_prompt(ai_path .. "/agents/architect.md")
+                        return AI_prompt(principles, nil, true)
+                    end,
+                },
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. Explan the selected code as following output:\n" ..
+                        "### Summary\n" ..
+                        "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+                        "### Code explain\n" ..
+                        "[Provide detailed, code-level explaination, similar to in-line code comments for the selected code]\n" ..
+                        "### Example\n" ..
+                        "[Use an example to illustrate the workflow of it or how to use it]\n" ..
+                        "2. If user doesn't provide the selected code, ask for it.\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        else
+                            behavior = behavior .. "3. The current file is #{buffer}\n" .. selected_code .. "\n"
+                        end
+
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Modify code"] = {
+            interaction = "chat",
+            description = "Modify code or implement features with requirements",
+            opts = {
+                alias = "modify_code",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                stop_context_insertion = true,
+                ignore_system_prompt = true,
+                intro_message = "Modify code or implement features with requirements",
+                is_slash_cmd = false,
+                is_workflow = false,
+            },
+            prompts = {
+                {
+                    role = "system",
+                    content = function()
+                        local principles = read_prompt(ai_path .. "/agents/developer.md")
+                        return AI_prompt(principles, nil, true)
+                    end,
+                },
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. If code is selected, focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
+                        "2. You must strictly provide the response in the following format:\n" ..
+                        "### Code Change\n" ..
+                        "[The modified or new code. Use necessary in-line English comments.]\n" ..
+                        "### Explaination\n" ..
+                        "[A detail summary of the changes, benefits, and potential trade-offs.]\n" ..
+                        "3. If you don't find any useful requirements to implement the code, ask for it\n" ..
+                        "4. Use @{insert_edit_into_file} to apply the change.\n"..
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        else
+                            behavior = behavior .. "5. The current file is #{buffer}\n" .. selected_code .. "\n"
+                        end
+
+                        behavior = behavior .. "\nUser requirements:\n"
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Review code"] = {
+            interaction = "chat",
+            description = "Review the code with requirements",
+            opts = {
+                alias = "review_code",
+                auto_submit = false,
+                modes = { "v", "n", "i" },
+                placement = "new",
+                stop_context_insertion = true,
+                ignore_system_prompt = true,
+                is_slash_cmd = false,
+                is_workflow = false,
+            },
+            prompts = {
+                {
+                    role = "system",
+                    content = function()
+                        local principles = read_prompt(ai_path .. "/agents/reviewer.md")
+                        return AI_prompt(principles, nil, true)
+                    end,
+                },
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. If user provides the selected code, just review this part code don't touch others\n" ..
+                        "2. If user doesn't provide the selected code, review all the files\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        else
+                            behavior = behavior .. "5. The current file is #{buffer}\n" .. selected_code .. "\n"
+                        end
+
+                        behavior = behavior .. "\nUser requirements:\n"
+                        return behavior
+                    end,
+                },
+            },
+        },
+    },
     extensions = {
         history = {
             enabled = true,
             opts = {
                 -- Keymap to open history from chat buffer (default: gh)
-                keymap = "gh",
+                keymap = "sh",
                 -- Keymap to save the current chat manually (when auto_save is disabled)
                 save_chat_keymap = "sc",
                 -- Save all chats by default (disable to save only manually using 'sc')
@@ -343,3 +544,9 @@ require("codecompanion").setup({
         }
     }
 })
+
+-- Usage:
+-- You can run :checkhealth codecompanion to verify that all requirements are met.
+-- How to delete the context? Just delete it in blockquote.
+-- Prompt lib: Create a new session and use new system/user prompt.
+-- slash_commands: Insert customer prompt in current session.
