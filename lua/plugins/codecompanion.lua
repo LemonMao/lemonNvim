@@ -4,104 +4,6 @@ local ai_path = utils.ai_path
 local read_prompt = utils.read_prompt
 local AI_prompt = utils.AI_prompt
 
-
--- ########################
--- CodeCompanionChat Spinner
--- ########################
-local processing = false
-local spinner_index = 1
-local namespace_id = nil
-local timer = nil
-local spinner_symbols = {
-  "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏",
-}
-local filetype = "codecompanion"
-
-local function get_buf(ft)
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == ft then
-      return buf
-    end
-  end
-  return nil
-end
-
-local function stop_spinner()
-  processing = false
-  if timer then
-    timer:stop()
-    timer:close()
-    timer = nil
-  end
-
-  local buf = get_buf(filetype)
-  if buf then
-    vim.api.nvim_buf_clear_namespace(buf, namespace_id, 0, -1)
-  end
-end
-
-local function update_spinner()
-  if not processing then
-    stop_spinner()
-    return
-  end
-
-  spinner_index = (spinner_index % #spinner_symbols) + 1
-
-  local buf = get_buf(filetype)
-  if buf == nil then
-    return
-  end
-
-  vim.api.nvim_buf_clear_namespace(buf, namespace_id, 0, -1)
-
-  local last_line = vim.api.nvim_buf_line_count(buf) - 1
-  vim.api.nvim_buf_set_extmark(buf, namespace_id, last_line, 0, {
-    virt_lines = { { { spinner_symbols[spinner_index] .. " Processing...", "Comment" } } },
-    virt_lines_above = true,
-  })
-end
-
-local function start_spinner()
-  processing = true
-  spinner_index = 0
-
-  if timer then
-    timer:stop()
-    timer:close()
-  end
-
-  timer = vim.uv.new_timer()
-  timer:start(
-    0,
-    100,
-    vim.schedule_wrap(function()
-      update_spinner()
-    end)
-  )
-end
-
-local function init()
-  namespace_id = vim.api.nvim_create_namespace("CodeCompanionSpinner")
-
-  local group = vim.api.nvim_create_augroup("CodeCompanionHooks", { clear = true })
-
-  vim.api.nvim_create_autocmd({ "User" }, {
-    pattern = "CodeCompanionRequest*",
-    group = group,
-    callback = function(request)
-      if request.match == "CodeCompanionRequestStarted" then
-        start_spinner()
-      elseif request.match == "CodeCompanionRequestFinished" then
-        stop_spinner()
-      end
-    end,
-  })
-end
-
--- 在 setup 之前调用初始化函数
-init()
-
 -- ########################
 -- CodeCompanion SetUp
 -- ########################
@@ -529,6 +431,7 @@ require("codecompanion").setup({
         },
     },
     extensions = {
+        spinner = {},
         history = {
             enabled = true,
             opts = {

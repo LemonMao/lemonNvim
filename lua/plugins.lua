@@ -95,6 +95,7 @@ require("lazy").setup({
             "nvim-treesitter/nvim-treesitter",
             "ravitemer/codecompanion-history.nvim",
             "franco-ruggeri/codecompanion-lualine.nvim",
+            "franco-ruggeri/codecompanion-spinner.nvim",
         },
     },
     --
