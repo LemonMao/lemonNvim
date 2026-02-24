@@ -1,8 +1,6 @@
 -- External functions statement
 local utils = require("utils")
 local ai_path = utils.ai_path
-local read_prompt = utils.read_prompt
-local AI_prompt = utils.AI_prompt
 
 -- ########################
 -- CodeCompanion SetUp
@@ -91,6 +89,36 @@ require("codecompanion").setup({
                         },
                     },
                 },
+                ["git_files"] = {
+                    description = "List git files",
+                    callback = function(chat)
+                        local handle = io.popen("git ls-files")
+                        if handle ~= nil then
+                            local result = handle:read("*a")
+                            handle:close()
+                            chat:add_context({ role = "user", content = result }, "git", "<git_files>")
+                        else
+                            return vim.notify("No git files available", vim.log.levels.INFO, { title = "CodeCompanion" })
+                        end
+                    end,
+                    opts = {
+                        contains_code = false,
+                    },
+                    keymaps = {
+                        modes = {
+                            n = { "sg"},
+                        },
+                    },
+                },
+                ["apply"] = {
+                    description = "Apply the code change to current buffer",
+                    callback = function(chat)
+                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change to #{buffer}" }, "c", true, true)
+                    end,
+                    opts = {
+                        contains_code = false,
+                    },
+                },
             },
             keymaps = {
                 completion = {
@@ -101,8 +129,8 @@ require("codecompanion").setup({
                 },
                 send = {
                     modes = {
-                        n = { "<CR>", "<C-CR>" },
-                        i = "<C-CR>",
+                        n = { "<CR>" },
+                        i = "<C-d>",
                     },
                     callback = function(chat)
                         vim.cmd("stopinsert")
@@ -113,6 +141,10 @@ require("codecompanion").setup({
                     description = "Send",
                 },
             },
+            opts = {
+                system_prompt = utils.read_file(ai_path .. "/agents/general.md")
+                -- system_prompt = "My system prompt"
+            }
         },
         inline = {
             adapter = {
@@ -221,32 +253,33 @@ require("codecompanion").setup({
            ]]
         ["Explain code"] = {
             interaction = "chat",
-            description = "Explain the code with requirements",
+            description = "Explain the code",
             opts = {
                 alias = "explain_code",
                 auto_submit = false,
-                modes = { "v" },
+                modes = { "v", "n"},
                 placement = "new",
+                ignore_system_prompt = false,
                 stop_context_insertion = true,
-                ignore_system_prompt = true,
-                -- intro_message = "Explain the code with requirements",
-                is_slash_cmd = false,
-                is_workflow = false,
+                is_slash_cmd = true,
                 --[[
+                -- intro_message = "Explain the code with requirements",
+                   [is_workflow = false,
                    [ pre_hook = nil,
                    [ rules = nil,
                    [ stop_context_insertion = nil,
                    [ user_prompt = nil,
                    ]]
             },
-            prompts = {
+            context = {
                 {
-                    role = "system",
-                    content = function()
-                        local principles = read_prompt(ai_path .. "/agents/architect.md")
-                        return AI_prompt(principles, nil, true)
-                    end,
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/architect.md",
+                    },
                 },
+            },
+            prompts = {
                 {
                     role = "user",
                     content = function(context)
@@ -263,7 +296,57 @@ require("codecompanion").setup({
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
                             behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "3. The current file is #{buffer}\n" .. selected_code .. "\n"
+                            behavior = behavior .. "3. The current file is #{buffer}\n"
+                        end
+
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Explain target"] = {
+            interaction = "chat",
+            description = "Explain the target/question in target",
+            opts = {
+                alias = "explain_target",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/architect.md",
+                    },
+                },
+            },
+            prompts = {
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. Explan the target/question as following output:\n" ..
+                            "### What's it?\n" ..
+                            "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+                            "### Example\n" ..
+                            "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
+                            "### Important components\n" ..
+                            "[What's the important components? How to use them?]\n" ..
+                            "[List important data structures and functions and comment for what they used for.]\n" ..
+                            "### Why design that?\n" ..
+                            "[benefits, trade-offs, pros and cons, ...]\n" ..
+                            "### Intergration\n" ..
+                            "[How does it work with other modules?]\n" ..
+                            "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it.\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        else
+                            behavior = behavior .. "3. The current file is #{buffer}\n"
                         end
 
                         return behavior
@@ -273,25 +356,25 @@ require("codecompanion").setup({
         },
         ["Modify code"] = {
             interaction = "chat",
-            description = "Modify code or implement features with requirements",
+            description = "Modify code or implement features",
             opts = {
                 alias = "modify_code",
                 auto_submit = false,
                 modes = { "v", "n" },
                 placement = "new",
+                ignore_system_prompt = false,
                 stop_context_insertion = true,
-                ignore_system_prompt = true,
-                is_slash_cmd = false,
-                is_workflow = false,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/developer.md",
+                    },
+                },
             },
             prompts = {
-                {
-                    role = "system",
-                    content = function()
-                        local principles = read_prompt(ai_path .. "/agents/developer.md")
-                        return AI_prompt(principles, nil, true)
-                    end,
-                },
                 {
                     role = "user",
                     content = function(context)
@@ -308,7 +391,7 @@ require("codecompanion").setup({
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
                             behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "5. The current file is #{buffer}\n" .. selected_code .. "\n"
+                            behavior = behavior .. "5. The current file is #{buffer}\n"
                         end
 
                         behavior = behavior .. "\nUser requirements:\n"
@@ -325,19 +408,19 @@ require("codecompanion").setup({
                 auto_submit = false,
                 modes = { "v", "n", "i" },
                 placement = "new",
+                ignore_system_prompt = false,
                 stop_context_insertion = true,
-                ignore_system_prompt = true,
-                is_slash_cmd = false,
-                is_workflow = false,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/reviewer.md",
+                    },
+                },
             },
             prompts = {
-                {
-                    role = "system",
-                    content = function()
-                        local principles = read_prompt(ai_path .. "/agents/reviewer.md")
-                        return AI_prompt(principles, nil, true)
-                    end,
-                },
                 {
                     role = "user",
                     content = function(context)
@@ -348,7 +431,7 @@ require("codecompanion").setup({
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
                             behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "3. The current file is #{buffer}\n" .. selected_code .. "\n"
+                            behavior = behavior .. "3. The current file is #{buffer}\n"
                         end
 
                         behavior = behavior .. "\nUser requirements:\n"
@@ -359,29 +442,30 @@ require("codecompanion").setup({
         },
         ["Brainstorm"] = {
             interaction = "chat",
-            description = "Brainstroming how to implement the feature with requirements",
+            description = "Brainstroming how to implement the feature",
             opts = {
                 alias = "Brainstorm",
                 auto_submit = false,
                 modes = { "v", "n" },
                 placement = "new",
+                ignore_system_prompt = false,
                 stop_context_insertion = true,
-                ignore_system_prompt = true,
-                is_slash_cmd = false,
-                is_workflow = false,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/architect.md",
+                        ai_path .. "/agents/brainstorming.md",
+                    },
+                },
             },
             prompts = {
                 {
-                    role = "system",
-                    content = function()
-                        local principles = read_prompt(ai_path .. "/agents/architect.md")
-                        return AI_prompt(principles, nil, true)
-                    end,
-                },
-                {
                     role = "user",
                     content = function(context)
-                        local behavior = read_prompt(ai_path .. "/commands/brainstorming.md")
+                        local behavior = "Follow brainstorming principles to generate plan for:\n"
                         return behavior
                     end,
                 },
@@ -395,35 +479,71 @@ require("codecompanion").setup({
                 auto_submit = false,
                 modes = { "v", "n" },
                 placement = "new",
+                ignore_system_prompt = false,
                 stop_context_insertion = true,
-                ignore_system_prompt = true,
-                is_slash_cmd = false,
-                is_workflow = false,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/architect.md",
+                        ai_path .. "/agents/developer.md",
+                    },
+                },
             },
             prompts = {
                 {
-                    role = "system",
-                    content = function()
-                        local principles = {
-                            read_prompt(ai_path .. "/agents/analyzer.md"),
-                            read_prompt(ai_path .. "/agents/developer.md")
-                        }
-                        return AI_prompt(principles, nil, true)
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
+                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
+                        "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks\n" ..
+                        "3. If you don't need other information, find solution how to fix it.\n" ..
+                        "4. Finianlly output the result as below:\n" ..
+                        "### Analysis\n" ..
+                        "[Multiple Analysis results report as Principles describe]\n" ..
+                        "### Code change\n" ..
+                        "[Code change of the most possilbe solution]\n"..
+                        "5. Use @{insert_edit_into_file} to apply the code change.\n"..
+                        "\nThe issue is:\n"
+                        return behavior
                     end,
                 },
+            },
+        },
+        ["Analyze issue"] = {
+            interaction = "chat",
+            description = "Analyze the issue",
+            opts = {
+                alias = "analyze_issue",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        ai_path .. "/agents/analyzer.md",
+                    },
+                },
+            },
+            prompts = {
                 {
                     role = "user",
                     content = function(context)
-                        local behavior = read_prompt(ai_path .. "/commands/brainstorming.md")
                         local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need.\
-                         This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
-                        "3. If you don't need other information, find solution how to fix it." ..
-                        "4. Finianlly output the result as below:\n" ..
-                        "## Analysis\n" ..
+                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
+                        "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
+                        "3. Finianlly output the result as below:\n" ..
+                        "### Analysis\n" ..
                         "[Multiple Analysis results report as Principles describe]\n" ..
-                        "## Code change\n" ..
-                        "[Code change of the most possilbe solution]\n"
+                        "4. You can leverage the tools @{read_file}.\n"..
+                        "\nThe issue is:\n"
                         return behavior
                     end,
                 },
@@ -523,4 +643,4 @@ require("codecompanion").setup({
 -- You can run :checkhealth codecompanion to verify that all requirements are met.
 -- How to delete the context? Just delete it in blockquote.
 -- Prompt lib: Create a new session and use new system/user prompt.
--- slash_commands: Insert customer prompt in current session.
+-- slash_commands: Insert customer prompt in current session/context.

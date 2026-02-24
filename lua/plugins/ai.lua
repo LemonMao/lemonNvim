@@ -51,14 +51,14 @@ local config = {
             explanation = "deepseek-chat",
             bashcommand = "deepseek-chat",
             completion  = "openai_fim_compatible:deepseek-chat",
-            avante      = "ds_v", -- Provider name for Avante
+            -- avante      = "ds_v", -- Provider name for Avante
         },
         gemini = {
             translation = "gemini-2.5-flash-lite",
             explanation = "gemini-2.5-flash",
             bashcommand = "gemini-2.5-flash",
             completion  = "gemini:gemini-2.5-flash",
-            avante      = "gemini",
+            -- avante      = "gemini",
         },
     },
     bash_history_size = 10,
