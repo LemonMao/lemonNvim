@@ -142,9 +142,11 @@ require("codecompanion").setup({
                 },
             },
             opts = {
-                system_prompt = utils.read_file(ai_path .. "/agents/general.md")
+                system_prompt = utils.read_file(utils.AI_ROLES.ASSISTANT)
+
                 -- system_prompt = "My system prompt"
             }
+
         },
         inline = {
             adapter = {
@@ -208,40 +210,41 @@ require("codecompanion").setup({
         role_cpp = {
             description = "A professional CPP language expert",
             files = {
-                ai_path .. "/agents/cpp_pro.md",
+                utils.AI_ROLES.CPP_PRO,
             },
         },
         role_c = {
             description = "A professional C language expert",
             files = {
-                ai_path .. "/agents/c_pro.md",
+                utils.AI_ROLES.C_PRO,
             },
         },
         role_python = {
             description = "A professional Python language expert",
             files = {
-                ai_path .. "/agents/python_pro.md",
+                utils.AI_ROLES.PYTHON_PRO,
             },
         },
         role_analyzer = {
             description = "A professional analyzer",
             files = {
-                ai_path .. "/agents/analyzer.md",
+                utils.AI_ROLES.ANALYZER,
             },
         },
         role_architect = {
             description = "A professional doc architect",
             files = {
-                ai_path .. "/agents/architect.md",
+                utils.AI_ROLES.ARCHITECT,
             },
         },
         role_reviewer = {
             description = "A professional reviewer",
             files = {
-                ai_path .. "/agents/reviewer.md",
+                utils.AI_ROLES.REVIEWER,
             },
         },
     },
+
     prompt_library = {
         -- Use `:CodeCompanionActions refresh` to apply the new added prompt
         --[[
@@ -275,10 +278,11 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/architect.md",
+                        utils.AI_ROLES.ARCHITECT,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",
@@ -320,10 +324,11 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/architect.md",
+                        utils.AI_ROLES.ARCHITECT,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",
@@ -370,10 +375,11 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/developer.md",
+                        utils.AI_ROLES.DEVELOPER,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",
@@ -416,10 +422,11 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/reviewer.md",
+                        utils.AI_ROLES.REVIEWER,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",
@@ -456,11 +463,12 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/architect.md",
-                        ai_path .. "/agents/brainstorming.md",
+                        utils.AI_ROLES.ARCHITECT,
+                        utils.AI_ROLES.BRAINSTORMING,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",
@@ -487,11 +495,12 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/architect.md",
-                        ai_path .. "/agents/developer.md",
+                        utils.AI_ROLES.ARCHITECT,
+                        utils.AI_ROLES.DEVELOPER,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",
@@ -528,10 +537,11 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        ai_path .. "/agents/analyzer.md",
+                        utils.AI_ROLES.ANALYZER,
                     },
                 },
             },
+
             prompts = {
                 {
                     role = "user",

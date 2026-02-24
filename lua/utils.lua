@@ -1,7 +1,20 @@
 local M = {}
 
 -- AI 代理和命令的基础路径
-M.ai_path = vim.fn.expand("~/.vim/AI")
+local ai_path = vim.fn.expand("~/.vim/AI")
+M.ai_path = ai_path
+M.AI_ROLES = {
+    ASSISTANT = ai_path .. "/agents/general.md",
+    REVIEWER = ai_path .. "/agents/reviewer.md",
+    CPP_PRO = ai_path .. "/agents/cpp_pro.md",
+    C_PRO = ai_path .. "/agents/c_pro.md",
+    PYTHON_PRO = ai_path .. "/agents/python_pro.md",
+    ANALYZER = ai_path .. "/agents/analyzer.md",
+    ARCHITECT = ai_path .. "/agents/architect.md",
+    DEVELOPER = ai_path .. "/agents/developer.md",
+    BRAINSTORMING = ai_path .. "/commands/brainstorming.md",
+}
+
 
 -- 通用文件读取函数
 function M.read_file(path)
@@ -43,7 +56,8 @@ function M.AI_prompt(principles, behavior, system_prompt)
     end
 
     if system_prompt then
-        local general_prompt = M.read_prompt(M.ai_path .. "/agents/general.md")
+        local general_prompt = M.read_prompt(M.AI_ROLES.ASSISTANT)
+
         if general_prompt then
             table.insert(rules, general_prompt)
         else
