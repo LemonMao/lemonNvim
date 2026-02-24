@@ -113,7 +113,7 @@ require("codecompanion").setup({
                 ["apply"] = {
                     description = "Apply the code change to current buffer",
                     callback = function(chat)
-                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change to #{buffer}" }, "c", true, true)
+                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change to #{buffer}.Don't explain. Just tell you're done or not." }, "c", true, true)
                     end,
                     opts = {
                         contains_code = false,
@@ -359,11 +359,11 @@ require("codecompanion").setup({
                 },
             },
         },
-        ["Modify code"] = {
+        ["Develop code"] = {
             interaction = "chat",
             description = "Modify code or implement features",
             opts = {
-                alias = "modify_code",
+                alias = "develop_code",
                 auto_submit = false,
                 modes = { "v", "n" },
                 placement = "new",
@@ -384,20 +384,15 @@ require("codecompanion").setup({
                 {
                     role = "user",
                     content = function(context)
-                        local behavior = "1. If code is selected, focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
-                        "2. You must strictly provide the response in the following format:\n" ..
-                        "### Code Change\n" ..
-                        "[The modified or new code. Use necessary in-line English comments.]\n" ..
-                        "### Explaination\n" ..
-                        "[A detail summary of the changes, benefits, and potential trade-offs.]\n" ..
-                        "3. If you don't find any useful requirements to implement the code, ask for it\n" ..
-                        "4. Use @{insert_edit_into_file} to apply the change.\n"
+                        local behavior = "1. Develop the feature or modify the code as requirements. If code is selected, focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
+                        "2. If you don't find any useful requirements to implement the code, ask for it\n" ..
+                        "3. After implementation, give a detail explanation of what you did.\n"
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "5. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                            behavior = behavior .. "4. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "5. The current file is #{buffer}\n"
+                            behavior = behavior .. "4. The current file is #{buffer}\n"
                         end
 
                         behavior = behavior .. "\nUser requirements:\n"
@@ -514,7 +509,6 @@ require("codecompanion").setup({
                         "[Multiple Analysis results report as Principles describe]\n" ..
                         "### Code change\n" ..
                         "[Code change of the most possilbe solution]\n"..
-                        "5. Use @{insert_edit_into_file} to apply the code change.\n"..
                         "\nThe issue is:\n"
                         return behavior
                     end,
