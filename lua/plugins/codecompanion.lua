@@ -188,6 +188,8 @@ require("codecompanion").setup({
             }
         },
         diff = {
+            enabled = true,
+            provider = inline, -- inline|split|mini_diff
             provider_opts = {
                 inline = {
                     layout = "buffer", -- float|buffer - Where to display the diff
@@ -556,6 +558,12 @@ require("codecompanion").setup({
     },
     extensions = {
         spinner = {},
+        fs_monitor = {
+            enabled = true,
+            opts = {
+                keymap = "gF", -- Will be changed to `gD` in future releases.
+            },
+        },
         history = {
             enabled = true,
             opts = {
@@ -641,6 +649,22 @@ require("codecompanion").setup({
             }
         }
     }
+})
+
+require("fs-monitor").setup({
+    monitor = {
+        debounce_ms = 300,
+        max_file_size = 1024 * 1024 * 2, -- 2MB
+        max_prepopulate_files = 2000,
+        max_depth = 6,
+        max_cache_bytes = 1024 * 1024 * 50, -- 50MB
+        ignore_patterns = {},
+        respect_gitignore = true,
+    },
+    diff = {
+        -- Window geometry, icons, titles
+        -- See lua/fs-monitor/config.lua for all options
+    },
 })
 
 -- Usage:
