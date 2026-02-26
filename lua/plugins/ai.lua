@@ -51,6 +51,7 @@ local config = {
             explanation = "deepseek-chat",
             bashcommand = "deepseek-chat",
             completion  = "openai_fim_compatible:deepseek-chat",
+            codecompanion = "deepseek:deepseek-chat",
             -- avante      = "ds_v", -- Provider name for Avante
         },
         gemini = {
@@ -58,6 +59,7 @@ local config = {
             explanation = "gemini-2.5-flash",
             bashcommand = "gemini-2.5-flash",
             completion  = "gemini:gemini-2.5-flash",
+            codecompanion = "gemini:gemini-2.5-flash-lite",
             -- avante      = "gemini",
         },
     },
@@ -124,6 +126,36 @@ local function change_model_group(group_name)
     if group.avante then
         local avante_cmd = string.format("AvanteSwitchProvider %s", group.avante)
         pcall(vim.cmd, avante_cmd)
+    end
+
+    -- Update CodeCompanion adapter
+    if group.codecompanion then
+        local ok, _ = pcall(require, "codecompanion")
+        if ok then
+            local parts = vim.split(group.codecompanion, ":")
+            local adapter_name = parts[1]
+            local model_name = parts[2]
+
+            local cc_config = require("codecompanion.config")
+
+            -- 增量更新各交互模式的适配器配置
+            cc_config.interactions.chat.adapter.name = adapter_name
+            cc_config.interactions.chat.adapter.model = model_name
+
+            cc_config.interactions.inline.adapter.name = adapter_name
+            cc_config.interactions.inline.adapter.model = model_name
+
+            -- 同时更新 cmd 和 background 适配器以保持一致性
+            if cc_config.interactions.cmd then
+                cc_config.interactions.cmd.adapter.name = adapter_name
+                cc_config.interactions.cmd.adapter.model = model_name
+            end
+
+            if cc_config.interactions.background then
+                cc_config.interactions.background.adapter.name = adapter_name
+                cc_config.interactions.background.adapter.model = model_name
+            end
+        end
     end
 
     vim.notify("AI Model group changed to: " .. group_name, vim.log.levels.INFO)
@@ -561,19 +593,20 @@ end
 -- ## Keymaps
 -- ## ------------------------------ ##
 
+-- Unused
+-- vim.keymap.set("v", "<leader>ae", ai_cc_explain, { desc = "AI: CodeCompanion Explain with buffer content" })
+-- vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
+-- vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })
+--
 vim.keymap.set({ "n", "v" }, "<leader>at", ai_translate, { desc = "AI: Translate" })
 vim.keymap.set("t", "<C-g>", ai_bash, { desc = "AI: Generate Bash Command" })
 vim.keymap.set("i", "<C-g>", ai_completion, { desc = "AI: Trigger completion" })
 vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
 
--- vim.keymap.set("v", "<leader>ae", ai_cc_explain, { desc = "AI: CodeCompanion Explain with buffer content" })
+vim.keymap.set({"i", "n"}, "<A-a>", "<Esc><cmd>CodeCompanionChat Toggle<CR>", { desc = "AI: Toggle sidebar", silent=true })
+vim.keymap.set({ "n", "v" }, "<leader>a", "<cmd>CodeCompanionActions<cr>", {  desc = "AI: Launch CodeCompanionActions", silent = true })
+vim.keymap.set({"n", "v"}, "<leader>aa", "<cmd>CodeCompanion /new_chat<CR>", { desc = "AI: New CodeCompanion Ask for selected content", silent=true })
+vim.keymap.set("v", "<leader>ae", "<cmd>CodeCompanion /explain_code<CR>", { desc = "AI: CodeCompanion Explain with buffer content", silent=true })
 vim.keymap.set("v", "<leader>aes", ai_explain, { desc = "AI: Simple Explain just for selected content" })
 vim.keymap.set("n", "<leader>aef", ai_explain_function, { desc = "AI: CallGraph Explain" })
--- vim.keymap.set("v", ",ac", ai_add_context, { desc = "AI: Add Context" })
--- vim.keymap.set("n", ",ac", ai_clean_context, { desc = "AI: Clean Context" })
-
-vim.keymap.set({"i", "n"}, "<A-a>", "<Esc><cmd>CodeCompanionChat Toggle<CR>", { desc = "AI: Toggle sidebar", silent=true })
-vim.keymap.set({"n", "v"}, "<leader>aa", "<cmd>CodeCompanionChat<CR>", { desc = "AI: New Ask for selected content", silent=true })
-vim.keymap.set("v", "<leader>ae", "<cmd>CodeCompanion /explain_code<CR><CR>", { desc = "AI: CodeCompanion Explain with buffer content" })
 vim.keymap.set("v", "<leader>ac", "<cmd>CodeCompanionChat Add<CR>", { desc = "AI: Append Ask for selected content", silent=true })
-vim.keymap.set({ "n", "v" }, "sa", "<cmd>CodeCompanionActions<cr>", { noremap = true, silent = true })

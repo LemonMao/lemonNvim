@@ -113,7 +113,7 @@ require("codecompanion").setup({
                 ["apply"] = {
                     description = "Apply the code change to current buffer",
                     callback = function(chat)
-                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change to #{buffer}.Don't explain. Just tell you're done or not." }, "c", true, true)
+                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change. And tell me if done or not." }, "c", true, true)
                     end,
                     opts = {
                         contains_code = false,
@@ -187,6 +187,48 @@ require("codecompanion").setup({
                 show_preset_prompts = false
             }
         },
+        chat = {
+            window = {
+                buflisted = false, -- List the chat buffer in the buffer list?
+                sticky = false, -- Chat buffer remains open when switching tabs
+
+                layout = "vertical", -- float|vertical|horizontal|buffer
+                full_height = true, -- for vertical layout
+                position = nil, -- left|right|top|bottom (nil will default depending on vim.opt.splitright|vim.opt.splitbelow)
+
+                width = 0.6,
+                height = 0.8,
+                border = "rounded",
+                relative = "editor",
+            },
+            intro_message = "Welcome to CodeCompanion ✨! Press ? for options | ⌨️ <C-d> Submit)",
+            separator = "─", -- 消息之间的分隔符
+            show_header_separator = true, -- 是否显示标题分隔符
+            show_settings = false, -- 是否在顶部显示模型参数设置
+            start_in_insert_mode = false, -- 打开时是否直接进入插入模式
+            token_count = function(tokens, adapter)
+                local metadata = _G.codecompanion_chat_metadata[vim.api.nvim_get_current_buf()]
+
+                local info = {
+                    -- string.format("󰚩 %s", adapter.schema.model.default),
+                    string.format("🪙 %s", tokens),
+                }
+
+                if metadata.cycles then
+                    table.insert(info, string.format("🔄 %s", metadata.cycles))
+                end
+
+                if metadata.context_items and metadata.context_items > 0 then
+                    table.insert(info, string.format("📂 %s", metadata.context_items))
+                end
+
+                if metadata.tools and metadata.tools > 0 then
+                    table.insert(info, string.format("🛠️ %s", metadata.tools))
+                end
+
+                return " (" .. table.concat(info, " · ")
+            end,
+        },
         diff = {
             enabled = true,
             provider = inline, -- inline|split|mini_diff
@@ -245,6 +287,12 @@ require("codecompanion").setup({
                 utils.AI_ROLES.REVIEWER,
             },
         },
+        role_develop = {
+            description = "A professional developer",
+            files = {
+                utils.AI_ROLES.DEVELOPER,
+            },
+        },
     },
 
     prompt_library = {
@@ -256,6 +304,36 @@ require("codecompanion").setup({
            [     },
            [ },
            ]]
+        ["New chat"] = {
+            interaction = "chat",
+            description = "Launch a new chat session",
+            opts = {
+                alias = "new_chat",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            prompts = {
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = ""
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        else
+                            behavior = behavior .. "The current file is #{buffer}.\n"
+                        end
+
+                        return behavior
+                    end,
+                },
+            },
+        },
         ["Explain code"] = {
             interaction = "chat",
             description = "Explain the code",
@@ -290,12 +368,12 @@ require("codecompanion").setup({
                     role = "user",
                     content = function(context)
                         local behavior = "1. Explan the selected code as following output:\n" ..
-                        "### Summary\n" ..
+                        "```\n### Summary\n" ..
                         "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
                         "### Code explain\n" ..
                         "[Provide detailed, code-level explaination, similar to in-line code comments for the selected code]\n" ..
                         "### Example\n" ..
-                        "[Use an example to illustrate the workflow of it or how to use it]\n" ..
+                        "[Use an example to illustrate the workflow of it or how to use it]\n```\n" ..
                         "2. If user doesn't provide the selected code, ask for it.\n"
 
                         if context.is_visual then
@@ -336,7 +414,7 @@ require("codecompanion").setup({
                     role = "user",
                     content = function(context)
                         local behavior = "1. Explan the target/question as following output:\n" ..
-                            "### What's it?\n" ..
+                            "```\n### What's it?\n" ..
                             "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
                             "### Example\n" ..
                             "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
@@ -346,14 +424,14 @@ require("codecompanion").setup({
                             "### Why design that?\n" ..
                             "[benefits, trade-offs, pros and cons, ...]\n" ..
                             "### Intergration\n" ..
-                            "[How does it work with other modules?]\n" ..
+                            "[How does it work with other modules?]\n```\n" ..
                             "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it.\n"
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
                             behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "3. The current file is #{buffer}\n"
+                            behavior = behavior .. "3. The current file is #{buffer}.\nThe target/question is:"
                         end
 
                         return behavior
@@ -507,10 +585,10 @@ require("codecompanion").setup({
                         "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks\n" ..
                         "3. If you don't need other information, find solution how to fix it.\n" ..
                         "4. Finianlly output the result as below:\n" ..
-                        "### Analysis\n" ..
+                        "```\n### Analysis\n" ..
                         "[Multiple Analysis results report as Principles describe]\n" ..
                         "### Code change\n" ..
-                        "[Code change of the most possilbe solution]\n"..
+                        "[Code change of the most possilbe solution]\n```\n"..
                         "\nThe issue is:\n"
                         return behavior
                     end,
@@ -546,8 +624,8 @@ require("codecompanion").setup({
                         "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
                         "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
                         "3. Finianlly output the result as below:\n" ..
-                        "### Analysis\n" ..
-                        "[Multiple Analysis results report as Principles describe]\n" ..
+                        "```\n### Analysis\n" ..
+                        "[Multiple Analysis results report as Principles describe]\n```\n" ..
                         "4. You can leverage the tools @{read_file}.\n"..
                         "\nThe issue is:\n"
                         return behavior
