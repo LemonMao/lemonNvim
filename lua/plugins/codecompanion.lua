@@ -110,10 +110,49 @@ require("codecompanion").setup({
                         },
                     },
                 },
+                ["git_message"] = {
+                    description = "Generate the message for the change",
+                    callback = function(chat)
+                        local function get_diff(cmd)
+                            local handle = io.popen(cmd)
+                            if handle ~= nil then
+                                local result = handle:read("*a")
+                                handle:close()
+                                return result
+                            end
+                            return ""
+                        end
+
+                        local staged = get_diff("git diff --cached")
+                        local unstaged = get_diff("git diff")
+
+                        if (staged == "" or staged == nil) and (unstaged == "" or unstaged == nil) then
+                            return vim.notify("No git changes detected", vim.log.levels.INFO, { title = "CodeCompanion" })
+                        end
+
+                        if staged ~= "" then
+                            chat:add_context({ role = "user", content = staged }, "git", "staged_diff")
+                        end
+                        if unstaged ~= "" then
+                            chat:add_context({ role = "user", content = unstaged }, "git", "unstaged_diff")
+                        end
+
+                        chat:toggle_system_prompt()
+                        chat:add_buf_message({
+                            role = "user",
+                            content = "I've provided the git changes in the attachment."..
+                                "Generate a concise and clear git commit message for these changes using the Conventional Commits format." ..
+                                "Message length is 20 ~ 150 words. Just provide the text message, no need explanation."
+                        })
+                    end,
+                    opts = {
+                        contains_code = false,
+                    },
+                },
                 ["apply"] = {
                     description = "Apply the code change to current buffer",
                     callback = function(chat)
-                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change. And tell me if done or not." }, "c", true, true)
+                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change.\nAnd tell me if done or not." }, "c", true, true)
                     end,
                     opts = {
                         contains_code = false,
