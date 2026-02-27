@@ -89,42 +89,11 @@ require("codecompanion").setup({
                         },
                     },
                 },
-                ["git_files"] = {
-                    description = "List git files",
-                    callback = function(chat)
-                        local handle = io.popen("git ls-files")
-                        if handle ~= nil then
-                            local result = handle:read("*a")
-                            handle:close()
-                            chat:add_context({ role = "user", content = result }, "git", "<git_files>")
-                        else
-                            return vim.notify("No git files available", vim.log.levels.INFO, { title = "CodeCompanion" })
-                        end
-                    end,
-                    opts = {
-                        contains_code = false,
-                    },
-                    keymaps = {
-                        modes = {
-                            n = { "sg"},
-                        },
-                    },
-                },
                 ["git_message"] = {
                     description = "Generate the message for the change",
                     callback = function(chat)
-                        local function get_diff(cmd)
-                            local handle = io.popen(cmd)
-                            if handle ~= nil then
-                                local result = handle:read("*a")
-                                handle:close()
-                                return result
-                            end
-                            return ""
-                        end
-
-                        local staged = get_diff("git diff --cached")
-                        local unstaged = get_diff("git diff")
+                        local staged = utils.run_cmd("git diff --cached")
+                        local unstaged = utils.run_cmd("git diff")
 
                         if (staged == "" or staged == nil) and (unstaged == "" or unstaged == nil) then
                             return vim.notify("No git changes detected", vim.log.levels.INFO, { title = "CodeCompanion" })
@@ -134,7 +103,7 @@ require("codecompanion").setup({
                             chat:add_context({ role = "user", content = staged }, "git", "staged_diff")
                         end
                         if unstaged ~= "" then
-                            chat:add_context({ role = "user", content = unstaged }, "git", "unstaged_diff")
+                            chat:add_contexg({ role = "user", content = unstaged }, "git", "unstaged_diff")
                         end
 
                         chat:toggle_system_prompt()
@@ -142,21 +111,31 @@ require("codecompanion").setup({
                             role = "user",
                             content = "I've provided the git changes in the attachment."..
                                 "Generate a concise and clear git commit message for these changes using the Conventional Commits format." ..
-                                "Message length is 20 ~ 150 words. Just provide the text message, no need explanation."
+                                "Message length is 20 ~ 150 words and shoule be English. Just provide the text message, no need explanation."
                         })
                     end,
-                    opts = {
-                        contains_code = false,
-                    },
+                },
+                ["git_diff"] = {
+                    description = "Insert git diff for a specific commit",
+                    callback = function(chat)
+                        commit_hash = vim.fn.input("Enter Commit Hash: ")
+                        local output = utils.run_cmd(string.format("git show %s", vim.fn.shellescape(commit_hash)))
+
+                        chat:add_context({
+                            role = "user",
+                            content = output,
+                        }, "git_diff", "git_diff_for_" .. commit_hash)
+                    end,
                 },
                 ["apply"] = {
                     description = "Apply the code change to current buffer",
                     callback = function(chat)
-                        vim.api.nvim_put({ "Use @{insert_edit_into_file} to apply the change.\nAnd tell me if done or not." }, "c", true, true)
+                        chat:add_buf_message({
+                            role = "user",
+                            content = "Use @{insert_edit_into_file} to apply the change.\n"..
+                                "And tell me if done or not."
+                        })
                     end,
-                    opts = {
-                        contains_code = false,
-                    },
                 },
             },
             keymaps = {
@@ -257,9 +236,11 @@ require("codecompanion").setup({
                     table.insert(info, string.format("🔄 %s", metadata.cycles))
                 end
 
-                if metadata.context_items and metadata.context_items > 0 then
-                    table.insert(info, string.format("📂 %s", metadata.context_items))
-                end
+                --[[
+                   [ if metadata.context_items and metadata.context_items > 0 then
+                   [     table.insert(info, string.format("📂 %s", metadata.context_items))
+                   [ end
+                   ]]
 
                 if metadata.tools and metadata.tools > 0 then
                     table.insert(info, string.format("🛠️ %s", metadata.tools))

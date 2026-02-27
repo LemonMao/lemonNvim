@@ -15,6 +15,13 @@ M.AI_ROLES = {
     BRAINSTORMING = ai_path .. "/commands/brainstorming.md",
 }
 
+function M.run_cmd(cmd)
+    local result = vim.fn.system(cmd)
+    if vim.v.shell_error ~= 0 then
+        error("Command failed with error code " .. vim.v.shell_error .. ": '" .. cmd .. "'. Output: " .. result)
+    end
+    return result
+end
 
 -- 通用文件读取函数
 function M.read_file(path)
