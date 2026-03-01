@@ -2,6 +2,98 @@
 local utils = require("utils")
 local ai_path = utils.ai_path
 
+local function handle_git_diff_selection(callback)
+    local items = {
+        { label = "Commit (git show)", value = "commit" },
+        { label = "Pull Request (gh pr)", value = "pr" },
+        { label = "Uncommitted Changes (staged & unstaged)", value = "uncommitted" },
+    }
+
+    vim.ui.select(items, {
+        prompt = "Select Git Diff Source:",
+        format_item = function(item)
+            return item.label
+        end,
+    }, function(choice)
+        if not choice then return end
+
+        local results = {}
+
+        if choice.value == "commit" then
+            vim.ui.input({ prompt = "Enter Commit Hash: " }, function(hash)
+                if hash and hash ~= "" then
+                    vim.system({ "git", "show", hash }, { text = true }, function(obj)
+                        if obj.code == 0 then
+                            results.git_diff_ci = obj.stdout
+                            vim.schedule(function()
+                                callback(results)
+                            end)
+                        else
+                            vim.schedule(function()
+                                vim.notify("Failed to get git show for hash: " .. hash, vim.log.levels.ERROR)
+                            end)
+                        end
+                    end)
+                end
+            end)
+
+        elseif choice.value == "pr" then
+            if vim.fn.executable("gh") == 0 then
+                vim.notify("GitHub CLI (gh) is not installed or not in PATH.", vim.log.levels.ERROR)
+                return
+            end
+            vim.ui.input({ prompt = "Enter PR ID: " }, function(pr_id)
+                if pr_id and pr_id ~= "" then
+                    -- Fetch PR info and diff asynchronously
+                    vim.system({ "gh", "pr", "view", pr_id, "--json", "body,commits,title" }, { text = true }, function(info_obj)
+                        if info_obj.code ~= 0 then
+                            return vim.schedule(function()
+                                vim.notify("Failed to get PR info for ID: " .. pr_id, vim.log.levels.ERROR)
+                            end)
+                        end
+
+                        vim.system({ "gh", "pr", "diff", pr_id }, { text = true }, function(diff_obj)
+                            if diff_obj.code == 0 then
+                                results.git_diff_pr = string.format("PR Info:\n%s\n\nPR Diff:\n%s", info_obj.stdout, diff_obj.stdout)
+                                vim.schedule(function()
+                                    callback(results)
+                                end)
+                            else
+                                vim.schedule(function()
+                                    vim.notify("Failed to get PR diff for ID: " .. pr_id, vim.log.levels.ERROR)
+                                end)
+                            end
+                        end)
+                    end)
+                end
+            end)
+
+        elseif choice.value == "uncommitted" then
+            vim.system({ "git", "diff", "--cached" }, { text = true }, function(staged_obj)
+                if staged_obj.code ~= 0 then
+                    return vim.schedule(function() vim.notify("Git diff staged failed", vim.log.levels.ERROR) end)
+                end
+                vim.system({ "git", "diff" }, { text = true }, function(unstaged_obj)
+                    if unstaged_obj.code ~= 0 then
+                        return vim.schedule(function() vim.notify("Git diff failed", vim.log.levels.ERROR) end)
+                    end
+                    if staged_obj.stdout ~= "" then results.git_diff_staged = staged_obj.stdout end
+                    if unstaged_obj.stdout ~= "" then results.git_diff_unstaged = unstaged_obj.stdout end
+
+                    vim.schedule(function()
+                        if next(results) then
+                            callback(results)
+                        else
+                            vim.notify("No changes detected", vim.log.levels.INFO)
+                        end
+                    end)
+                end)
+            end)
+        end
+    end)
+end
+
+
 -- ########################
 -- CodeCompanion SetUp
 -- ########################
@@ -90,7 +182,7 @@ require("codecompanion").setup({
                     },
                 },
                 ["git_message"] = {
-                    description = "Generate the message for the change",
+                    description = "Generate the commit message for the change",
                     callback = function(chat)
                         local staged = utils.run_cmd("git diff --cached")
                         local unstaged = utils.run_cmd("git diff")
@@ -103,7 +195,7 @@ require("codecompanion").setup({
                             chat:add_context({ role = "user", content = staged }, "git", "staged_diff")
                         end
                         if unstaged ~= "" then
-                            chat:add_contexg({ role = "user", content = unstaged }, "git", "unstaged_diff")
+                            chat:add_context({ role = "user", content = unstaged }, "git", "unstaged_diff")
                         end
 
                         chat:toggle_system_prompt()
@@ -111,20 +203,48 @@ require("codecompanion").setup({
                             role = "user",
                             content = "I've provided the git changes in the attachment."..
                                 "Generate a concise and clear git commit message for these changes using the Conventional Commits format." ..
-                                "Message length is 20 ~ 150 words and shoule be English. Just provide the text message, no need explanation."
+                                "Message is 20 ~ 150 words and should be English. Just provide the text message, no need explanation."
                         })
                     end,
                 },
                 ["git_diff"] = {
-                    description = "Insert git diff for a specific commit",
+                    description = "Insert git diff into context",
                     callback = function(chat)
-                        commit_hash = vim.fn.input("Enter Commit Hash: ")
-                        local output = utils.run_cmd(string.format("git show %s", vim.fn.shellescape(commit_hash)))
+                        handle_git_diff_selection(function(diffs)
+                            for key, content in pairs(diffs) do
+                                chat:add_context({
+                                    role = "user",
+                                    content = content,
+                                }, "git_diff", key)
+                            end
+                        end)
+                    end,
+                },
+                ["review_diff"] = {
+                    description = "Reivew the code change for PR/CI/Staged",
+                    callback = function(chat)
+                        local rule1 = utils.read_prompt(utils.AI_ROLES.REVIEWER)
+                        if not rule1 then
+                            vim.notify("Failed to load reviewer rules", vim.log.levels.ERROR)
+                            return
+                        end
+                        local rule1_id = utils.wrap_tag(rule1.name, "rules")
+                        chat:add_context({ role = "user", content = rule1.content }, "file", rule1_id)
 
-                        chat:add_context({
+                        handle_git_diff_selection(function(diffs)
+                            for key, content in pairs(diffs) do
+                                chat:add_context({
+                                    role = "user",
+                                    content = content,
+                                }, "git_diff", key)
+                            end
+                        end)
+
+                        chat:add_buf_message({
                             role = "user",
-                            content = output,
-                        }, "git_diff", "git_diff_for_" .. commit_hash)
+                            content = "Do the comprehensively code review for the attached diff change.\n"..
+                                "You should follow the attached principles."
+                        })
                     end,
                 },
                 ["apply"] = {
@@ -232,17 +352,17 @@ require("codecompanion").setup({
                     string.format("🪙 %s", tokens),
                 }
 
-                if metadata.cycles then
+                if metadata and metadata.cycles then
                     table.insert(info, string.format("🔄 %s", metadata.cycles))
                 end
 
                 --[[
-                   [ if metadata.context_items and metadata.context_items > 0 then
+                   [ if metadata and metadata.context_items and metadata.context_items > 0 then
                    [     table.insert(info, string.format("📂 %s", metadata.context_items))
                    [ end
                    ]]
 
-                if metadata.tools and metadata.tools > 0 then
+                if metadata and metadata.tools and metadata.tools > 0 then
                     table.insert(info, string.format("🛠️ %s", metadata.tools))
                 end
 
@@ -251,7 +371,7 @@ require("codecompanion").setup({
         },
         diff = {
             enabled = true,
-            provider = inline, -- inline|split|mini_diff
+            provider = "inline", -- inline|split|mini_diff
             provider_opts = {
                 inline = {
                     layout = "buffer", -- float|buffer - Where to display the diff
@@ -451,7 +571,7 @@ require("codecompanion").setup({
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
                             behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "3. The current file is #{buffer}.\nThe target/question is:"
+                            behavior = behavior .. "\nThe target/question is:"
                         end
 
                         return behavior
@@ -507,7 +627,7 @@ require("codecompanion").setup({
             opts = {
                 alias = "review_code",
                 auto_submit = false,
-                modes = { "v", "n", "i" },
+                modes = { "v", "n" },
                 placement = "new",
                 ignore_system_prompt = false,
                 stop_context_insertion = true,
@@ -590,7 +710,7 @@ require("codecompanion").setup({
                 {
                     type = "file",
                     path = {
-                        utils.AI_ROLES.ARCHITECT,
+                        utils.AI_ROLES.ANALYZER,
                         utils.AI_ROLES.DEVELOPER,
                     },
                 },
@@ -608,8 +728,14 @@ require("codecompanion").setup({
                         "```\n### Analysis\n" ..
                         "[Multiple Analysis results report as Principles describe]\n" ..
                         "### Code change\n" ..
-                        "[Code change of the most possilbe solution]\n```\n"..
-                        "\nThe issue is:\n"
+                        "[Code change of the most possilbe solution]\n```\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "\nThe selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        end
+
+                        behavior = behavior .. "\nThe issue is:\n"
                         return behavior
                     end,
                 },
@@ -646,8 +772,14 @@ require("codecompanion").setup({
                         "3. Finianlly output the result as below:\n" ..
                         "```\n### Analysis\n" ..
                         "[Multiple Analysis results report as Principles describe]\n```\n" ..
-                        "4. You can leverage the tools @{read_file}.\n"..
-                        "\nThe issue is:\n"
+                        "4. You can leverage the tools @{read_file}.\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "\nThe selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        end
+
+                        behavior = behavior .. "\nThe issue is:\n"
                         return behavior
                     end,
                 },

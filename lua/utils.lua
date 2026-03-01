@@ -4,14 +4,14 @@ local M = {}
 local ai_path = vim.fn.expand("~/.vim/AI")
 M.ai_path = ai_path
 M.AI_ROLES = {
-    ASSISTANT = ai_path .. "/agents/general.md",
-    REVIEWER = ai_path .. "/agents/reviewer.md",
-    CPP_PRO = ai_path .. "/agents/cpp_pro.md",
-    C_PRO = ai_path .. "/agents/c_pro.md",
-    PYTHON_PRO = ai_path .. "/agents/python_pro.md",
-    ANALYZER = ai_path .. "/agents/analyzer.md",
-    ARCHITECT = ai_path .. "/agents/architect.md",
-    DEVELOPER = ai_path .. "/agents/developer.md",
+    ASSISTANT = ai_path .. "/rules/general.md",
+    REVIEWER = ai_path .. "/rules/reviewer.md",
+    CPP_PRO = ai_path .. "/rules/cpp_pro.md",
+    C_PRO = ai_path .. "/rules/c_pro.md",
+    PYTHON_PRO = ai_path .. "/rules/python_pro.md",
+    ANALYZER = ai_path .. "/rules/analyzer.md",
+    ARCHITECT = ai_path .. "/rules/architect.md",
+    DEVELOPER = ai_path .. "/rules/developer.md",
     BRAINSTORMING = ai_path .. "/commands/brainstorming.md",
 }
 

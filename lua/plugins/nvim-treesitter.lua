@@ -51,6 +51,9 @@ treesitter.setup {
     -- 启用增量选择
     incremental_selection = {
         enable = true,
+        disable = function(lang, bufnr)
+            return vim.bo[bufnr].filetype == "codecompanion"
+        end,
         keymaps = {
             init_selection = "<CR>",
             node_incremental = "<CR>",
