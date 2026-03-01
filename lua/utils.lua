@@ -138,4 +138,43 @@ function M.wrap_code_with_md(code, filetype)
     return string.format("```%s\n%s\n```", filetype, code)
 end
 
+--- Update CodeCompanion adapter and model
+function M.update_codecompanion_model(adapter_model)
+    local ok, _ = pcall(require, "codecompanion")
+    if not ok then return end
+
+    local parts = vim.split(adapter_model, ":")
+    if #parts < 2 then
+        vim.notify("Invalid adapter_model format. Expected 'adapter:model'", vim.log.levels.ERROR)
+        return
+    end
+    local adapter_name = parts[1]
+    local model_name = parts[2]
+
+    local cc_config = require("codecompanion.config")
+
+    -- Update adapter configurations for various interaction modes
+    cc_config.interactions.chat.adapter.name = adapter_name
+    cc_config.interactions.chat.adapter.model = model_name
+
+    cc_config.interactions.inline.adapter.name = adapter_name
+    cc_config.interactions.inline.adapter.model = model_name
+
+    vim.notify("CodeCompanion adapter and model updated to: " .. adapter_model, vim.log.levels.INFO)
+
+    -- Update cmd and background adapters for consistency
+--[[
+   [     if cc_config.interactions.cmd then
+   [         cc_config.interactions.cmd.adapter.name = adapter_name
+   [         cc_config.interactions.cmd.adapter.model = model_name
+   [     end
+   [
+   [     if cc_config.interactions.background then
+   [         cc_config.interactions.background.adapter.name = adapter_name
+   [         cc_config.interactions.background.adapter.model = model_name
+   [     end
+   ]]
+end
+
+
 return M

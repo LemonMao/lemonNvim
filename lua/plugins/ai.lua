@@ -130,33 +130,9 @@ local function change_model_group(group_name)
 
     -- Update CodeCompanion adapter
     if group.codecompanion then
-        local ok, _ = pcall(require, "codecompanion")
-        if ok then
-            local parts = vim.split(group.codecompanion, ":")
-            local adapter_name = parts[1]
-            local model_name = parts[2]
-
-            local cc_config = require("codecompanion.config")
-
-            -- 增量更新各交互模式的适配器配置
-            cc_config.interactions.chat.adapter.name = adapter_name
-            cc_config.interactions.chat.adapter.model = model_name
-
-            cc_config.interactions.inline.adapter.name = adapter_name
-            cc_config.interactions.inline.adapter.model = model_name
-
-            -- 同时更新 cmd 和 background 适配器以保持一致性
-            if cc_config.interactions.cmd then
-                cc_config.interactions.cmd.adapter.name = adapter_name
-                cc_config.interactions.cmd.adapter.model = model_name
-            end
-
-            if cc_config.interactions.background then
-                cc_config.interactions.background.adapter.name = adapter_name
-                cc_config.interactions.background.adapter.model = model_name
-            end
-        end
+        utils.update_codecompanion_model(group.codecompanion)
     end
+
 
     vim.notify("AI Model group changed to: " .. group_name, vim.log.levels.INFO)
 end

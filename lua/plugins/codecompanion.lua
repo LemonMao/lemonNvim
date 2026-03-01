@@ -93,6 +93,11 @@ local function handle_git_diff_selection(callback)
     end)
 end
 
+local function change_adapter_to_gemini_lite(chat)
+    local adapter = {name = "gemini", model = "gemini-2.5-flash"}
+    chat:change_adapter(adapter)
+    vim.notify("Model updated to: " .. adapter.model, vim.log.levels.INFO, { title = "CodeCompanion" })
+end
 
 -- ########################
 -- CodeCompanion SetUp
@@ -205,6 +210,7 @@ require("codecompanion").setup({
                                 "Generate a concise and clear git commit message for these changes using the Conventional Commits format." ..
                                 "Message is 20 ~ 150 words and should be English. Just provide the text message, no need explanation."
                         })
+                        change_adapter_to_gemini_lite(chat)
                     end,
                 },
                 ["git_diff"] = {
@@ -220,7 +226,7 @@ require("codecompanion").setup({
                         end)
                     end,
                 },
-                ["review_diff"] = {
+                ["review_code"] = {
                     description = "Reivew the code change for PR/CI/Staged",
                     callback = function(chat)
                         local rule1 = utils.read_prompt(utils.AI_ROLES.REVIEWER)
@@ -250,6 +256,7 @@ require("codecompanion").setup({
                 ["apply"] = {
                     description = "Apply the code change to current buffer",
                     callback = function(chat)
+                        change_adapter_to_gemini_lite(chat)
                         chat:add_buf_message({
                             role = "user",
                             content = "Use @{insert_edit_into_file} to apply the change.\n"..
@@ -257,6 +264,7 @@ require("codecompanion").setup({
                         })
                     end,
                 },
+
             },
             keymaps = {
                 completion = {
@@ -604,15 +612,17 @@ require("codecompanion").setup({
                 {
                     role = "user",
                     content = function(context)
-                        local behavior = "1. Develop the feature or modify the code as requirements. If code is selected, focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
-                        "2. If you don't find any useful requirements to implement the code, ask for it\n" ..
+                        local behavior = "You're a Senior Principal Engineer to implement the code."..
+                        "1. First implement as the user requirements."..
+                        " If not found, implement with the above analysis report or design plan or review solution above."..
+                        " If you don't find them all, ask for user what to implement.\n"..
+                        "2. If code is selected, just focus on modifying or completing that specific block."..
+                        " If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
                         "3. After implementation, give a detail explanation of what you did.\n"
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
                             behavior = behavior .. "4. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
-                        else
-                            behavior = behavior .. "4. The current file is #{buffer}\n"
                         end
 
                         behavior = behavior .. "\nUser requirements:\n"
@@ -627,11 +637,11 @@ require("codecompanion").setup({
             opts = {
                 alias = "review_code",
                 auto_submit = false,
-                modes = { "v", "n" },
+                modes = { "v" },
                 placement = "new",
                 ignore_system_prompt = false,
                 stop_context_insertion = true,
-                is_slash_cmd = true,
+                is_slash_cmd = false,
             },
             context = {
                 {
@@ -689,53 +699,6 @@ require("codecompanion").setup({
                     role = "user",
                     content = function(context)
                         local behavior = "Follow brainstorming principles to generate plan for:\n"
-                        return behavior
-                    end,
-                },
-            },
-        },
-        ["Fix issue"] = {
-            interaction = "chat",
-            description = "Analyze and fix the issue",
-            opts = {
-                alias = "fix_issue",
-                auto_submit = false,
-                modes = { "v", "n" },
-                placement = "new",
-                ignore_system_prompt = false,
-                stop_context_insertion = true,
-                is_slash_cmd = true,
-            },
-            context = {
-                {
-                    type = "file",
-                    path = {
-                        utils.AI_ROLES.ANALYZER,
-                        utils.AI_ROLES.DEVELOPER,
-                    },
-                },
-            },
-
-            prompts = {
-                {
-                    role = "user",
-                    content = function(context)
-                        local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
-                        "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks\n" ..
-                        "3. If you don't need other information, find solution how to fix it.\n" ..
-                        "4. Finianlly output the result as below:\n" ..
-                        "```\n### Analysis\n" ..
-                        "[Multiple Analysis results report as Principles describe]\n" ..
-                        "### Code change\n" ..
-                        "[Code change of the most possilbe solution]\n```\n"
-
-                        if context.is_visual then
-                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "\nThe selected code of #{buffer} is:\n" .. selected_code .. "\n"
-                        end
-
-                        behavior = behavior .. "\nThe issue is:\n"
                         return behavior
                     end,
                 },
