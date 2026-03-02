@@ -75,7 +75,6 @@ cmp.setup({
                 nvim_lsp = "[lsp]",
                 buffer = "[buf]",
                 path = '[path]',
-                codeium = '[LLM]',
                 latex_symbols = "[LaTeX]",
             })[entry.source.name]
             return vim_item

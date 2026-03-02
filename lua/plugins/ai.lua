@@ -588,3 +588,4 @@ vim.keymap.set("v", "<leader>aes", ai_explain, { desc = "AI: Simple Explain just
 vim.keymap.set("n", "<leader>aef", ai_explain_function, { desc = "AI: CallGraph Explain" })
 vim.keymap.set("v", "<leader>ac", "<cmd>CodeCompanionChat Add<CR>", { desc = "AI: Append Ask for selected content", silent=true })
 vim.keymap.set("n", "<leader>ah", "<cmd>CodeCompanionHistory<CR>", { desc = "AI: Show CodeCompanion History", silent=true })
+vim.keymap.set("v", "<leader>am", "<cmd>CodeCompanion /modify_code<CR>", { desc = "AI: New CodeCompanion Ask for selected content", silent=true })

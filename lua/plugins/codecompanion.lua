@@ -2,6 +2,18 @@
 local utils = require("utils")
 local ai_path = utils.ai_path
 
+local function add_context_to_chat(chat, rules)
+    -- `rules` is a table of file type
+    for _, rule_identifier in ipairs(rules) do
+        local rule_data = utils.read_prompt(rule_identifier)
+        if not rule_data then
+            return vim.notify("Failed to load rule: " .. tostring(rule_identifier), vim.log.levels.ERROR)
+        end
+        local rule_id = utils.wrap_tag(rule_data.name, "rules")
+        chat:add_context({ role = "user", content = rule_data.content }, "file", rule_id)
+    end
+end
+
 local function handle_git_diff_selection(callback)
     local items = {
         { label = "Commit (git show)", value = "commit" },
@@ -208,7 +220,9 @@ require("codecompanion").setup({
                             role = "user",
                             content = "I've provided the git changes in the attachment."..
                                 "Generate a concise and clear git commit message for these changes using the Conventional Commits format." ..
-                                "Message is 20 ~ 150 words and should be English. Just provide the text message, no need explanation."
+                                "Message is 20 ~ 150 words and should be English."..
+                                "Just provide the text message with format ```text```, no need explanation."..
+                                "Commit Type could be one of `feat`, `fix`, `refactor`, `docs`, `test`"
                         })
                         change_adapter_to_gemini_lite(chat)
                     end,
@@ -226,17 +240,49 @@ require("codecompanion").setup({
                         end)
                     end,
                 },
-                ["review_code"] = {
-                    description = "Reivew the code change for PR/CI/Staged",
+                ["apply"] = {
+                    description = "Apply the code change to current buffer",
                     callback = function(chat)
-                        local rule1 = utils.read_prompt(utils.AI_ROLES.REVIEWER)
-                        if not rule1 then
-                            vim.notify("Failed to load reviewer rules", vim.log.levels.ERROR)
-                            return
-                        end
-                        local rule1_id = utils.wrap_tag(rule1.name, "rules")
-                        chat:add_context({ role = "user", content = rule1.content }, "file", rule1_id)
-
+                        change_adapter_to_gemini_lite(chat)
+                        chat:add_buf_message({
+                            role = "user",
+                            content = "Use @{insert_edit_into_file} to apply the change.\n"..
+                                "And tell me if done or not."
+                        })
+                    end,
+                },
+                -------------------------------------------------------------
+                -- Develop workflow: 'design', 'develop', 'review', 'analyze'
+                ["design"] = {
+                    description = "Based on user requirements to genrate the design plan with brainstorming",
+                    callback = function(chat)
+                        add_context_to_chat(chat, {utils.AI_ROLES.ARCHITECT, utils.AI_ROLES.BRAINSTORMING})
+                        chat:add_buf_message({
+                            role = "user",
+                            content = "Tools: @{run_command}.\n"..
+                                "Follow brainstorming principles to generate design for user requirements:\n"
+                        })
+                    end,
+                },
+                ["develop"] = {
+                    description = "Based on `Analysis report` or `Review report` or `Design plan` or `User requirements` to Implement the code",
+                    callback = function(chat)
+                        add_context_to_chat(chat, {utils.AI_ROLES.DEVELOPER})
+                        chat:add_buf_message({
+                            role = "user",
+                            content = "You're a Senior Principal Engineer to implement the code.\n"..
+                                "1. Implement code based on `Analysis report` or `Review report` or `Design plan` or `User requirements`"..
+                                " If you don't find any one, ask for what to implement.\n"..
+                                "2. If code is selected, just focus on modifying or completing that specific block."..
+                                " If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
+                                "3. After implementation, give a detail explanation of what you did.\n\nUser requirements:\n"
+                        })
+                    end,
+                },
+                ["review"] = {
+                    description = "Based on the code diff PR/CI/Staged to generate the review report.",
+                    callback = function(chat)
+                        add_context_to_chat(chat, {utils.AI_ROLES.REVIEWER})
                         handle_git_diff_selection(function(diffs)
                             for key, content in pairs(diffs) do
                                 chat:add_context({
@@ -253,18 +299,33 @@ require("codecompanion").setup({
                         })
                     end,
                 },
-                ["apply"] = {
-                    description = "Apply the code change to current buffer",
+                ["analyze"] = {
+                    description = "Based on the `Failing test log` or `Issue description` to generate the Analyze report",
                     callback = function(chat)
-                        change_adapter_to_gemini_lite(chat)
+                        add_context_to_chat(chat, {utils.AI_ROLES.ANALYZER})
                         chat:add_buf_message({
                             role = "user",
-                            content = "Use @{insert_edit_into_file} to apply the change.\n"..
-                                "And tell me if done or not."
+                            content = "1. Analyze the rootcause with the provided issue and logs.\n" ..
+                                "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
+                                "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
+                                "3. Finianlly output the result as below:\n" ..
+                                "```\n### Analysis\n" ..
+                                "[Multiple Analysis results report as Principles describe]\n```\n" ..
+                                "4. You can leverage the tools @{read_file}.\n\nThe issue is:\n"
                         })
                     end,
                 },
-
+                -- end of development workflow
+                -------------------------------------------------------------
+            },
+            editor_context = {
+                ["buffer"] = {
+                    opts = {
+                        -- Always sync the buffer by sharing its "diff"
+                        -- Or choose "all" to share the entire buffer
+                        default_params = "all",
+                    },
+                },
             },
             keymaps = {
                 completion = {
@@ -274,10 +335,7 @@ require("codecompanion").setup({
                     description = "[Chat] Completion menu",
                 },
                 send = {
-                    modes = {
-                        n = { "<CR>" },
-                        i = "<C-d>",
-                    },
+                    modes = { n = { "<CR>" }, i = "<C-d>" },
                     callback = function(chat)
                         vim.cmd("stopinsert")
                         chat:submit()
@@ -289,41 +347,49 @@ require("codecompanion").setup({
             },
             opts = {
                 system_prompt = utils.read_file(utils.AI_ROLES.ASSISTANT)
-
-                -- system_prompt = "My system prompt"
             }
 
         },
         inline = {
             adapter = {
                 name = "gemini",
-                -- model = "gemini-3-flash-preview",
-                model = "gemini-2.5-flash-lite",
-            },
-            keymaps = {
-                accept_change = {
-                    modes = { n = "ca" }, -- Remember this as DiffAccept
-                },
-                reject_change = {
-                    modes = { n = "cr" }, -- Remember this as DiffReject
-                },
-                always_accept = {
-                    modes = { n = "cy" }, -- Remember this as DiffYolo
-                },
+                model = "gemini-2.5-flash",
             },
         },
         cmd = {
             adapter = {
                 name = "gemini",
-                -- model = "gemini-3-flash-preview",
                 model = "gemini-2.5-flash-lite",
             },
         },
         background = {
             adapter = {
                 name = "gemini",
-                -- model = "gemini-3-flash-preview",
                 model = "gemini-2.5-flash-lite",
+            },
+        },
+        shared = {
+            keymaps = {
+                always_accept = {
+                    callback = "keymaps.always_accept",
+                    modes = { n = "g1" },
+                },
+                accept_change = {
+                    callback = "keymaps.accept_change",
+                    modes = { n = "g2" },
+                },
+                reject_change = {
+                    callback = "keymaps.reject_change",
+                    modes = { n = "g3" },
+                },
+                next_hunk = {
+                    callback = "keymaps.next_hunk",
+                    modes = { n = "}" },
+                },
+                previous_hunk = {
+                    callback = "keymaps.previous_hunk",
+                    modes = { n = "{" },
+                },
             },
         },
     },
@@ -379,18 +445,9 @@ require("codecompanion").setup({
         },
         diff = {
             enabled = true,
-            provider = "inline", -- inline|split|mini_diff
-            provider_opts = {
-                inline = {
-                    layout = "buffer", -- float|buffer - Where to display the diff
-                    opts = {
-                        context_lines = 3, -- Number of context lines in hunks
-                        dim = 25, -- Background dim level for floating diff (0-100, [100 full transparent], only applies when layout = "float")
-                        full_width_removed = true, -- Make removed lines span full width
-                        show_keymap_hints = true, -- Show "gda: accept | gdr: reject" hints above diff
-                        show_removed = true, -- Show removed lines as virtual text
-                    },
-                },
+            word_highlights = {
+                additions = true,
+                deletions = true,
             },
         },
     },
@@ -445,13 +502,7 @@ require("codecompanion").setup({
 
     prompt_library = {
         -- Use `:CodeCompanionActions refresh` to apply the new added prompt
-        --[[
-           [ markdown = {
-           [     dirs = {
-           [         "~/.config/nvim/AI/prompts",
-           [     },
-           [ },
-           ]]
+        -- Minor workflow
         ["New chat"] = {
             interaction = "chat",
             description = "Launch a new chat session",
@@ -510,7 +561,6 @@ require("codecompanion").setup({
                     },
                 },
             },
-
             prompts = {
                 {
                     role = "user",
@@ -556,7 +606,6 @@ require("codecompanion").setup({
                     },
                 },
             },
-
             prompts = {
                 {
                     role = "user",
@@ -587,50 +636,7 @@ require("codecompanion").setup({
                 },
             },
         },
-        ["Develop code"] = {
-            interaction = "chat",
-            description = "Modify code or implement features",
-            opts = {
-                alias = "develop_code",
-                auto_submit = false,
-                modes = { "v", "n" },
-                placement = "new",
-                ignore_system_prompt = false,
-                stop_context_insertion = true,
-                is_slash_cmd = true,
-            },
-            context = {
-                {
-                    type = "file",
-                    path = {
-                        utils.AI_ROLES.DEVELOPER,
-                    },
-                },
-            },
 
-            prompts = {
-                {
-                    role = "user",
-                    content = function(context)
-                        local behavior = "You're a Senior Principal Engineer to implement the code."..
-                        "1. First implement as the user requirements."..
-                        " If not found, implement with the above analysis report or design plan or review solution above."..
-                        " If you don't find them all, ask for user what to implement.\n"..
-                        "2. If code is selected, just focus on modifying or completing that specific block."..
-                        " If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
-                        "3. After implementation, give a detail explanation of what you did.\n"
-
-                        if context.is_visual then
-                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "4. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
-                        end
-
-                        behavior = behavior .. "\nUser requirements:\n"
-                        return behavior
-                    end,
-                },
-            },
-        },
         ["Review code"] = {
             interaction = "chat",
             description = "Review the code with requirements",
@@ -651,7 +657,6 @@ require("codecompanion").setup({
                     },
                 },
             },
-
             prompts = {
                 {
                     role = "user",
@@ -672,77 +677,42 @@ require("codecompanion").setup({
                 },
             },
         },
-        ["Brainstorm"] = {
-            interaction = "chat",
-            description = "Brainstroming how to implement the feature",
+        ["Modify code"] = {
+            interaction = "inline",
+            description = "Modify or complete code",
             opts = {
-                alias = "Brainstorm",
+                alias = "modify_code",
                 auto_submit = false,
                 modes = { "v", "n" },
-                placement = "new",
-                ignore_system_prompt = false,
+                placement = "replace",
+                ignore_system_prompt = true,
                 stop_context_insertion = true,
-                is_slash_cmd = true,
+                is_slash_cmd = false,
             },
             context = {
                 {
                     type = "file",
                     path = {
-                        utils.AI_ROLES.ARCHITECT,
-                        utils.AI_ROLES.BRAINSTORMING,
+                        utils.AI_ROLES.DEVELOPER,
                     },
                 },
             },
-
             prompts = {
                 {
                     role = "user",
                     content = function(context)
-                        local behavior = "Follow brainstorming principles to generate plan for:\n"
-                        return behavior
-                    end,
-                },
-            },
-        },
-        ["Analyze issue"] = {
-            interaction = "chat",
-            description = "Analyze the issue",
-            opts = {
-                alias = "analyze_issue",
-                auto_submit = false,
-                modes = { "v", "n" },
-                placement = "new",
-                ignore_system_prompt = false,
-                stop_context_insertion = true,
-                is_slash_cmd = true,
-            },
-            context = {
-                {
-                    type = "file",
-                    path = {
-                        utils.AI_ROLES.ANALYZER,
-                    },
-                },
-            },
-
-            prompts = {
-                {
-                    role = "user",
-                    content = function(context)
-                        local behavior = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
-                        "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
-                        "3. Finianlly output the result as below:\n" ..
-                        "```\n### Analysis\n" ..
-                        "[Multiple Analysis results report as Principles describe]\n```\n" ..
-                        "4. You can leverage the tools @{read_file}.\n"
-
+                        local behavior = "You're a Principal Engineer to modify or complete the code."..
+                        "No explaination just provide the code"
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "\nThe selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                            behavior = behavior .. "The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         end
 
-                        behavior = behavior .. "\nThe issue is:\n"
+                        local user_requirements = vim.fn.input("Input your requirements (<Enter> to Submit): ")
+                        if user_requirements and user_requirements ~= "" then
+                            behavior = behavior .. "\nUser requirements: " .. user_requirements .. "\n"
+                        end
+
                         return behavior
                     end,
                 },
@@ -751,12 +721,6 @@ require("codecompanion").setup({
     },
     extensions = {
         spinner = {},
-        fs_monitor = {
-            enabled = true,
-            opts = {
-                keymap = "gF", -- Will be changed to `gD` in future releases.
-            },
-        },
         history = {
             enabled = true,
             opts = {
@@ -844,24 +808,27 @@ require("codecompanion").setup({
     }
 })
 
-require("fs-monitor").setup({
-    monitor = {
-        debounce_ms = 300,
-        max_file_size = 1024 * 1024 * 2, -- 2MB
-        max_prepopulate_files = 2000,
-        max_depth = 6,
-        max_cache_bytes = 1024 * 1024 * 50, -- 50MB
-        ignore_patterns = {},
-        respect_gitignore = true,
-    },
-    diff = {
-        -- Window geometry, icons, titles
-        -- See lua/fs-monitor/config.lua for all options
-    },
-})
-
 -- Usage:
 -- You can run :checkhealth codecompanion to verify that all requirements are met.
 -- How to delete the context? Just delete it in blockquote.
 -- Prompt lib: Create a new session and use new system/user prompt.
 -- slash_commands: Insert customer prompt in current session/context.
+--
+-- Develop Workflow:
+--
+-- # Feature development:
+-- /design:  Based on user requirements to genrate the design plan
+-- /develop: Based on desing plan to Implement the code
+-- /review:  Based on the code diff to generate the review report
+-- /develop: Based on review report to Implement the code
+--
+-- # Minor feature development:
+-- /develop: Based on user requirment to Implement the code
+-- /review:  Based on the code diff to generate the review report
+-- /develop: Based on review report to Implement the code
+--
+-- # Debug:
+-- /analyze: Based on the `Failing test log` or `Issue description` to generate the Analyze report
+-- /develop: Based on Analyze report to Implement the code
+-- /review:  Based on the code diff to generate the review report
+-- /develop: Based on review report to Implement the code

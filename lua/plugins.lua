@@ -96,7 +96,6 @@ require("lazy").setup({
             "ravitemer/codecompanion-history.nvim",
             "franco-ruggeri/codecompanion-lualine.nvim",
             "franco-ruggeri/codecompanion-spinner.nvim",
-            "bassamsdata/fs-monitor.nvim",
         },
     },
     --
