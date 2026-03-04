@@ -480,7 +480,76 @@ local function get_path_under_cursor_or_selection()
     return path:gsub("^%s*(.-)%s*$", "%1") -- Trim whitespace
 end
 
-vim.keymap.set({"n", "v"}, "<A-o>", function()
+-- Helper function to search file with fzf using non-interactive mode
+local function search_with_fzf(original_path)
+    -- First search in home directory
+    local search_dir = vim.fn.expand("~")
+
+    -- Use fzf with --filter option for non-interactive filtering
+    -- This avoids the ioctl error by not requiring terminal interaction
+    -- Add --tiebreak=begin to prefer matches closer to the beginning of the path
+    local cmd = string.format("find %s -type f 2>/dev/null | fzf --filter '%s' --select-1 --exit-0 --tiebreak=begin",
+                              vim.fn.shellescape(search_dir), vim.fn.shellescape(original_path))
+
+    -- Add TERM=dumb to prevent fzf from trying to use terminal features
+    local env_cmd = "TERM=dumb " .. cmd
+
+    local result = vim.fn.system(env_cmd)
+    result = result:gsub("^%s*(.-)%s*$", "%1")  -- Trim
+
+    if result ~= "" then
+        -- Handle multiple results: take only the first line
+        local first_line = result:match("([^\n]+)")
+        if first_line then
+            result = first_line
+        end
+
+        -- Found, open it
+        vim.notify("Found via fzf: " .. result, vim.log.levels.INFO)
+
+        -- Use vim.cmd with proper escaping
+        local escaped_path = result:gsub("([%[%]%*%?%^%$%%])", "%%%1")
+        vim.cmd("edit " .. escaped_path)
+        return true
+    else
+        -- Not found, ask for directory
+        vim.notify("File not found in ~. Please enter a directory to search.", vim.log.levels.WARN)
+        local user_dir = vim.fn.input("Enter directory to search: ", "", "dir")
+        if user_dir and user_dir ~= "" then
+            -- Search again in user_dir
+            local cmd2 = string.format("find %s -type f 2>/dev/null | fzf --filter '%s' --select-1 --exit-0 --tiebreak=begin",
+                                      vim.fn.shellescape(user_dir), vim.fn.shellescape(original_path))
+            local env_cmd2 = "TERM=dumb " .. cmd2
+            local result2 = vim.fn.system(env_cmd2)
+            result2 = result2:gsub("^%s*(.-)%s*$", "%1")
+
+            if result2 ~= "" then
+                -- Handle multiple results: take only the first line
+                local first_line2 = result2:match("([^\n]+)")
+                if first_line2 then
+                    result2 = first_line2
+                end
+
+                vim.notify("Found via fzf: " .. result2, vim.log.levels.INFO)
+
+                -- Use vim.cmd with proper escaping
+                local escaped_path2 = result2:gsub("([%[%]%*%?%^%$%%])", "%%%1")
+                vim.cmd("edit " .. escaped_path2)
+                return true
+            else
+                vim.notify("File not found in " .. user_dir .. ". Copying path to clipboard: " .. original_path, vim.log.levels.INFO)
+                vim.fn.setreg("+", original_path)
+                return false
+            end
+        else
+            vim.notify("No directory entered. Copying path to clipboard: " .. original_path, vim.log.levels.INFO)
+            vim.fn.setreg("+", original_path)
+            return false
+        end
+    end
+end
+
+vim.keymap.set({"n", "v", "t"}, "<A-o>", function()
     local filepath = get_path_under_cursor_or_selection()
 
     if filepath == "" then
@@ -500,9 +569,8 @@ vim.keymap.set({"n", "v"}, "<A-o>", function()
         vim.notify("Opening file in Neovim: " .. full_filepath, vim.log.levels.INFO)
         vim.cmd("edit " .. vim.fn.fnameescape(full_filepath))
     else
-        -- Fallback: copy the string to system clipboard if not a readable file and not an image
-        vim.notify("File not found or not readable. Copying path to clipboard: " .. filepath, vim.log.levels.INFO)
-        vim.fn.setreg("+", filepath)
+        -- File not found, use fzf to search
+        search_with_fzf(filepath)
     end
 end, { noremap = true, silent = true, desc = "Open file/image if selected text is a valid path, else copy it" })
 

@@ -253,32 +253,6 @@ require("codecompanion").setup({
                 },
                 -------------------------------------------------------------
                 -- Develop workflow: 'design', 'develop', 'review', 'analyze'
-                ["design"] = {
-                    description = "Based on user requirements to genrate the design plan with brainstorming",
-                    callback = function(chat)
-                        add_context_to_chat(chat, {utils.AI_ROLES.ARCHITECT, utils.AI_ROLES.BRAINSTORMING})
-                        chat:add_buf_message({
-                            role = "user",
-                            content = "Tools: @{run_command}.\n"..
-                                "Follow brainstorming principles to generate design for user requirements:\n"
-                        })
-                    end,
-                },
-                ["develop"] = {
-                    description = "Based on `Analysis report` or `Review report` or `Design plan` or `User requirements` to Implement the code",
-                    callback = function(chat)
-                        add_context_to_chat(chat, {utils.AI_ROLES.DEVELOPER})
-                        chat:add_buf_message({
-                            role = "user",
-                            content = "You're a Senior Principal Engineer to implement the code.\n"..
-                                "1. Implement code based on `Analysis report` or `Review report` or `Design plan` or `User requirements`"..
-                                " If you don't find any one, ask for what to implement.\n"..
-                                "2. If code is selected, just focus on modifying or completing that specific block."..
-                                " If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
-                                "3. After implementation, give a detail explanation of what you did.\n\nUser requirements:\n"
-                        })
-                    end,
-                },
                 ["review"] = {
                     description = "Based on the code diff PR/CI/Staged to generate the review report.",
                     callback = function(chat)
@@ -299,22 +273,50 @@ require("codecompanion").setup({
                         })
                     end,
                 },
-                ["analyze"] = {
-                    description = "Based on the `Failing test log` or `Issue description` to generate the Analyze report",
-                    callback = function(chat)
-                        add_context_to_chat(chat, {utils.AI_ROLES.ANALYZER})
-                        chat:add_buf_message({
-                            role = "user",
-                            content = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                                "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
-                                "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
-                                "3. Finianlly output the result as below:\n" ..
-                                "```\n### Analysis\n" ..
-                                "[Multiple Analysis results report as Principles describe]\n```\n" ..
-                                "4. You can leverage the tools @{read_file}.\n\nThe issue is:\n"
-                        })
-                    end,
-                },
+                --[[
+                   [ ["design"] = {
+                   [     description = "Based on user requirements to genrate the design plan with brainstorming",
+                   [     callback = function(chat)
+                   [         add_context_to_chat(chat, {utils.AI_ROLES.ARCHITECT, utils.AI_ROLES.BRAINSTORMING})
+                   [         chat:add_buf_message({
+                   [             role = "user",
+                   [             content = "Tools: @{run_command}.\n"..
+                   [                 "Follow brainstorming principles to generate design for user requirements:\n"
+                   [         })
+                   [     end,
+                   [ },
+                   [ ["develop"] = {
+                   [     description = "Based on `Analysis report` or `Review report` or `Design plan` or `User requirements` to Implement the code",
+                   [     callback = function(chat)
+                   [         add_context_to_chat(chat, {utils.AI_ROLES.DEVELOPER})
+                   [         chat:add_buf_message({
+                   [             role = "user",
+                   [             content = "You're a Senior Principal Engineer to implement the code.\n"..
+                   [                 "1. Implement code based on `Analysis report` or `Review report` or `Design plan` or `User requirements`"..
+                   [                 " If you don't find any one, ask for what to implement.\n"..
+                   [                 "2. If code is selected, just focus on modifying or completing that specific block."..
+                   [                 " If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
+                   [                 "3. After implementation, give a detail explanation of what you did.\n\nUser requirements:\n"
+                   [         })
+                   [     end,
+                   [ },
+                   [ ["analyze"] = {
+                   [     description = "Based on the `Failing test log` or `Issue description` to generate the Analyze report",
+                   [     callback = function(chat)
+                   [         add_context_to_chat(chat, {utils.AI_ROLES.ANALYZER})
+                   [         chat:add_buf_message({
+                   [             role = "user",
+                   [             content = "1. Analyze the rootcause with the provided issue and logs.\n" ..
+                   [                 "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
+                   [                 "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
+                   [                 "3. Finianlly output the result as below:\n" ..
+                   [                 "```\n### Analysis\n" ..
+                   [                 "[Multiple Analysis results report as Principles describe]\n```\n" ..
+                   [                 "4. You can leverage the tools @{read_file}.\n\nThe issue is:\n"
+                   [         })
+                   [     end,
+                   [ },
+                   ]]
                 -- end of development workflow
                 -------------------------------------------------------------
             },
@@ -502,6 +504,7 @@ require("codecompanion").setup({
 
     prompt_library = {
         -- Use `:CodeCompanionActions refresh` to apply the new added prompt
+        -- ------------ --
         -- Minor workflow
         ["New chat"] = {
             interaction = "chat",
@@ -528,6 +531,184 @@ require("codecompanion").setup({
                             behavior = behavior .. "The current file is #{buffer}.\n"
                         end
 
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Explain target"] = {
+            interaction = "chat",
+            description = "Explain the target/question in target",
+            opts = {
+                alias = "explain_target",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        utils.AI_ROLES.ARCHITECT,
+                    },
+                },
+            },
+            prompts = {
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. Explan the target/question as following output:\n" ..
+                        "```\n### What's it?\n" ..
+                        "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
+                        "### Example\n" ..
+                        "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
+                        "### Important components\n" ..
+                        "[What's the important components? How to use them?]\n" ..
+                        "[List important data structures and functions and comment for what they used for.]\n" ..
+                        "### Why design that?\n" ..
+                        "[benefits, trade-offs, pros and cons, ...]\n" ..
+                        "### Intergration\n" ..
+                        "[How does it work with other modules?]\n```\n" ..
+                        "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it.\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                        else
+                            behavior = behavior .. "\nThe target/question is:"
+                        end
+
+                        return behavior
+                    end,
+                },
+            },
+        },
+        -- ------------ --
+        -- Development
+        --
+        ["Design plan"] = {
+            interaction = "chat",
+            description = "Generate a design plan based on requirements",
+            opts = {
+                alias = "design",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            --[[
+               [ tools = {
+               [     "run_command",
+               [     "insert_edit_into_file",
+               [ },
+               ]]
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        utils.AI_ROLES.ARCHITECT,
+                        utils.AI_ROLES.BRAINSTORMING,
+                    },
+                },
+            },
+            prompts = {
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "Tools: @{run_cmd}, @{insert_edit_into_file}\n"..
+                        "Follow brainstorming principles to generate design for user requirements:\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "\nSelected code in #{buffer}:\n" .. selected_code .. "\n"
+                        end
+
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Develop code"] = {
+            interaction = "chat",
+            description = "Based on `Analysis report` or `Review report` or `Design plan` or `User requirements` to Implement the code",
+            opts = {
+                alias = "develop",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        utils.AI_ROLES.DEVELOPER,
+                    },
+                },
+            },
+            prompts = {
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "You're a Senior Principal Engineer to implement the code.\n" ..
+                        "1. Implement code based on `Analysis report` or `Review report` or `Design plan` or `User requirements`. If you don't find any one, ask for what to implement.\n" ..
+                        "2. If code is selected, just focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
+                        "3. Give a detail explanation of what you do before apply the change.\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "\nSelected code in #{buffer}:\n" .. selected_code .. "\n"
+                        end
+
+                        behavior = behavior .. "\nUser requirements:\n"
+                        return behavior
+                    end,
+                },
+            },
+        },
+        ["Analyze issue"] = {
+            interaction = "chat",
+            description = "Based on the `Failing test log` or `Issue description` to generate the Analyze report",
+            opts = {
+                alias = "analyze",
+                auto_submit = false,
+                modes = { "v", "n" },
+                placement = "new",
+                ignore_system_prompt = false,
+                stop_context_insertion = true,
+                is_slash_cmd = true,
+            },
+            context = {
+                {
+                    type = "file",
+                    path = {
+                        utils.AI_ROLES.ANALYZER,
+                    },
+                },
+            },
+            prompts = {
+                {
+                    role = "user",
+                    content = function(context)
+                        local behavior = "1. Analyze the rootcause with the `Failing test log` or `Issue description`.\n" ..
+                        "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need. This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks.\n" ..
+                        "3. Finally output the result as below:\n" ..
+                        "```\n### Analysis\n[Analysis report as Principles describe]\n```\n"..
+                        "4. Tools: @{read_file}\n"
+
+                        if context.is_visual then
+                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
+                            behavior = behavior .. "\nContext information from #{buffer}:\n" .. selected_code .. "\n"
+                        end
+
+                        behavior = behavior .. "\nThe issue is:\n"
                         return behavior
                     end,
                 },
@@ -586,57 +767,6 @@ require("codecompanion").setup({
                 },
             },
         },
-        ["Explain target"] = {
-            interaction = "chat",
-            description = "Explain the target/question in target",
-            opts = {
-                alias = "explain_target",
-                auto_submit = false,
-                modes = { "v", "n" },
-                placement = "new",
-                ignore_system_prompt = false,
-                stop_context_insertion = true,
-                is_slash_cmd = true,
-            },
-            context = {
-                {
-                    type = "file",
-                    path = {
-                        utils.AI_ROLES.ARCHITECT,
-                    },
-                },
-            },
-            prompts = {
-                {
-                    role = "user",
-                    content = function(context)
-                        local behavior = "1. Explan the target/question as following output:\n" ..
-                            "```\n### What's it?\n" ..
-                            "[Provide a detail description/explaination of 'What is it? What is it used for?]\n" ..
-                            "### Example\n" ..
-                            "[Use an example to illustrate the workflow of it or how to use it.]\n" ..
-                            "### Important components\n" ..
-                            "[What's the important components? How to use them?]\n" ..
-                            "[List important data structures and functions and comment for what they used for.]\n" ..
-                            "### Why design that?\n" ..
-                            "[benefits, trade-offs, pros and cons, ...]\n" ..
-                            "### Intergration\n" ..
-                            "[How does it work with other modules?]\n```\n" ..
-                            "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it.\n"
-
-                        if context.is_visual then
-                            local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
-                        else
-                            behavior = behavior .. "\nThe target/question is:"
-                        end
-
-                        return behavior
-                    end,
-                },
-            },
-        },
-
         ["Review code"] = {
             interaction = "chat",
             description = "Review the code with requirements",
