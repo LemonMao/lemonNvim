@@ -17,7 +17,7 @@ local function add_context_to_chat(chat, rules)
     end
 end
 
-local function handle_git_diff_selection(callback)
+local function get_code_diff(callback)
     local items = {
         { label = "Commit (git show)", value = "commit" },
         { label = "Pull Request (gh pr)", value = "pr" },
@@ -320,7 +320,7 @@ require("codecompanion").setup({
                 ["git_diff"] = {
                     description = "Insert git diff into context",
                     callback = function(chat)
-                        handle_git_diff_selection(function(diffs)
+                        get_code_diff(function(diffs)
                             for key, content in pairs(diffs) do
                                 chat:add_context({
                                     role = "user",
@@ -341,74 +341,6 @@ require("codecompanion").setup({
                         })
                     end,
                 },
-                -------------------------------------------------------------
-                -- Develop workflow: 'design', 'develop', 'review', 'analyze'
-                ["review"] = {
-                    description = "Based on the code diff PR/CI/Staged to generate the review report.",
-                    callback = function(chat)
-                        add_context_to_chat(chat, {utils.AI_ROLES.REVIEWER})
-                        handle_git_diff_selection(function(diffs)
-                            for key, content in pairs(diffs) do
-                                chat:add_context({
-                                    role = "user",
-                                    content = content,
-                                }, "git_diff", key)
-                            end
-                        end)
-
-                        chat:add_buf_message({
-                            role = "user",
-                            content = "Do the comprehensively code review for the attached diff change.\n"..
-                                "You should follow the attached principles."
-                        })
-                    end,
-                },
-                --[[
-                   [ ["design"] = {
-                   [     description = "Based on user requirements to genrate the design plan with brainstorming",
-                   [     callback = function(chat)
-                   [         add_context_to_chat(chat, {utils.AI_ROLES.ARCHITECT, utils.AI_ROLES.BRAINSTORMING})
-                   [         chat:add_buf_message({
-                   [             role = "user",
-                   [             content = "Tools: @{run_command}.\n"..
-                   [                 "Follow brainstorming principles to generate design for user requirements:\n"
-                   [         })
-                   [     end,
-                   [ },
-                   [ ["develop"] = {
-                   [     description = "Based on `Analysis report` or `Review report` or `Design plan` or `User requirements` to Implement the code",
-                   [     callback = function(chat)
-                   [         add_context_to_chat(chat, {utils.AI_ROLES.DEVELOPER})
-                   [         chat:add_buf_message({
-                   [             role = "user",
-                   [             content = "You're a Senior Principal Engineer to implement the code.\n"..
-                   [                 "1. Implement code based on `Analysis report` or `Review report` or `Design plan` or `User requirements`"..
-                   [                 " If you don't find any one, ask for what to implement.\n"..
-                   [                 "2. If code is selected, just focus on modifying or completing that specific block."..
-                   [                 " If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
-                   [                 "3. After implementation, give a detail explanation of what you did.\n\nUser requirements:\n"
-                   [         })
-                   [     end,
-                   [ },
-                   [ ["analyze"] = {
-                   [     description = "Based on the `Failing test log` or `Issue description` to generate the Analyze report",
-                   [     callback = function(chat)
-                   [         add_context_to_chat(chat, {utils.AI_ROLES.ANALYZER})
-                   [         chat:add_buf_message({
-                   [             role = "user",
-                   [             content = "1. Analyze the rootcause with the provided issue and logs.\n" ..
-                   [                 "2. If you cannot have enough confidence to find rootcause. Ask me for help to provide the information you need."..
-                   [                 "This is important and don't stop until user says he cannot provide anymore, or loops up to 5 asks" ..
-                   [                 "3. Finianlly output the result as below:\n" ..
-                   [                 "```\n### Analysis\n" ..
-                   [                 "[Multiple Analysis results report as Principles describe]\n```\n" ..
-                   [                 "4. You can leverage the tools @{read_file}.\n\nThe issue is:\n"
-                   [         })
-                   [     end,
-                   [ },
-                   ]]
-                -- end of development workflow
-                -------------------------------------------------------------
             },
             editor_context = {
                 ["buffer"] = {
@@ -861,15 +793,15 @@ require("codecompanion").setup({
         },
         ["Review code"] = {
             interaction = "chat",
-            description = "Review the code with requirements",
+            description = "Do the code review for PR/CI/Staged/Selected code",
             opts = {
                 alias = "review_code",
                 auto_submit = false,
-                modes = { "v" },
+                modes = { "v", "n" },
                 placement = "new",
                 ignore_system_prompt = false,
                 stop_context_insertion = true,
-                is_slash_cmd = false,
+                is_slash_cmd = true,
             },
             context = {
                 {
@@ -883,17 +815,17 @@ require("codecompanion").setup({
                 {
                     role = "user",
                     content = function(context)
-                        local behavior = "1. If user provides the selected code, just review this part code don't touch others\n" ..
-                        "2. If user doesn't provide the selected code, review all the files\n"
+                        local behavior = "You're a Senior Principal Engineer to do the comprehensively code review with attached principles.\n"..
+                        "1. If user provides the selected code, just review this part code don't touch others.\n" ..
+                        "2. If user doesn't provide the selected code, do  review for the attached diff change.\n"
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
-                            behavior = behavior .. "3. The selected code of #{buffer} is:\n" .. selected_code .. "\n"
+                            behavior = behavior .. "The selected code of #{buffer} is:\n" .. selected_code .. "\n"
                         else
-                            behavior = behavior .. "3. The current file is #{buffer}\n"
+                            behavior = behavior .. "/git"
                         end
 
-                        behavior = behavior .. "\nUser requirements:\n"
                         return behavior
                     end,
                 },
