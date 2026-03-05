@@ -2,6 +2,9 @@
 local utils = require("utils")
 local ai_path = utils.ai_path
 
+-- ########################
+-- Local function
+-- ########################
 local function add_context_to_chat(chat, rules)
     -- `rules` is a table of file type
     for _, rule_identifier in ipairs(rules) do
@@ -111,6 +114,91 @@ local function change_adapter_to_gemini_lite(chat)
     vim.notify("Model updated to: " .. adapter.model, vim.log.levels.INFO, { title = "CodeCompanion" })
 end
 
+
+local function handle_cc_setting(opts)
+    local config = require("codecompanion.config")
+    if not config then
+        return vim.notify("CodeCompanion config not found", vim.log.levels.ERROR)
+    end
+
+    local args = opts.fargs
+    local key = args[1]
+    local val = args[2]
+
+    -- 获取当前默认的聊天适配器名称
+    local adapter_name = config.interactions.chat.adapter.name
+    local adapter_config = config.adapters.http[adapter_name]
+
+    if not adapter_config then
+        return vim.notify("Adapter config for " .. adapter_name .. " not found", vim.log.levels.ERROR)
+    end
+
+    -- 关键修复：处理函数类型的适配器配置
+    local config_table
+    if type(adapter_config) == "function" then
+        -- 执行工厂函数获取实际配置表
+        config_table = adapter_config()
+    else
+        -- 已经是表，直接使用
+        config_table = adapter_config
+    end
+
+    if key == "temperature" then
+        local num = tonumber(val)
+        if num then
+            config_table.schema.temperature.default = num
+            vim.notify(string.format("CC: %s temperature set to %.1f", adapter_name, num), vim.log.levels.INFO)
+        else
+            vim.notify("Invalid temperature value", vim.log.levels.ERROR)
+        end
+    elseif key == "thinking" then
+        if vim.tbl_contains({ "low", "medium", "high" }, val) then
+            config_table.schema.reasoning_effort.default = val
+            vim.notify(string.format("CC: %s reasoning_effort set to %s", adapter_name, val), vim.log.levels.INFO)
+        else
+            vim.notify("Invalid thinking level: use low, medium, or high", vim.log.levels.ERROR)
+        end
+    end
+
+    -- 更新配置（如果是函数类型，需要用新表替换原函数）
+    if type(adapter_config) == "function" then
+        config.adapters.http[adapter_name] = config_table
+    end
+end
+
+
+-- ########################
+-- NVIM command
+-- ########################
+vim.api.nvim_create_user_command("Ccsetting", handle_cc_setting, {
+    nargs = "+",
+    desc = "Dynamically configure CodeCompanion settings",
+    complete = function(ArgLead, CmdLine, CursorPos)
+        local args = vim.split(CmdLine, "%s+")
+        -- 过滤掉空字符串（由于末尾空格导致）
+        args = vim.tbl_filter(function(s) return s ~= "" end, args)
+
+        -- 如果正在输入第一个参数 (key)
+        if #args == 1 or (#args == 2 and CmdLine:sub(-1) ~= " ") then
+            return vim.tbl_filter(function(item)
+                return item:find(ArgLead)
+            end, { "temperature", "thinking" })
+        end
+
+        -- 如果正在输入第二个参数 (value)
+        if #args == 2 or (#args == 3 and CmdLine:sub(-1) ~= " ") then
+            local key = args[2]
+            if key == "thinking" then
+                return vim.tbl_filter(function(item)
+                    return item:find(ArgLead)
+                end, { "low", "medium", "high" })
+            elseif key == "temperature" then
+                return { "0.1", "0.5", "0.9" }
+            end
+        end
+    end,
+})
+
 -- ########################
 -- CodeCompanion SetUp
 -- ########################
@@ -151,7 +239,7 @@ require("codecompanion").setup({
                             default = 8*1024,
                         },
                         reasoning_effort = {
-                            default = "medium",
+                            default = "low",
                         },
                     },
                 })
@@ -222,7 +310,9 @@ require("codecompanion").setup({
                                 "Generate a concise and clear git commit message for these changes using the Conventional Commits format." ..
                                 "Message is 20 ~ 150 words and should be English."..
                                 "Just provide the text message with format ```text```, no need explanation."..
-                                "Commit Type could be one of `feat`, `fix`, `refactor`, `docs`, `test`"
+                                "Commit Type could be one of `feat`, `fix`, `refactor`, `docs`, `test`."..
+                                "The message should be limited to 90 characters one line."..
+                                "If there're multiple changes, use number to list most 5 important items."
                         })
                         change_adapter_to_gemini_lite(chat)
                     end,
@@ -420,6 +510,8 @@ require("codecompanion").setup({
             show_header_separator = true, -- 是否显示标题分隔符
             show_settings = false, -- 是否在顶部显示模型参数设置
             start_in_insert_mode = false, -- 打开时是否直接进入插入模式
+            fold_reasoning = true, -- Fold the reasoning content in the chat buffer?
+            show_reasoning = true, -- Show reasoning content in the chat buffer?
             token_count = function(tokens, adapter)
                 local metadata = _G.codecompanion_chat_metadata[vim.api.nvim_get_current_buf()]
 
