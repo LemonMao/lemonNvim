@@ -525,7 +525,9 @@ local function ai_bash()
         vim.cmd("stopinsert")
     end, { buffer = buf })
 
-    vim.cmd("startinsert")
+    vim.schedule(function()
+        vim.cmd("startinsert")
+    end)
 end
 
 local function ai_completion()

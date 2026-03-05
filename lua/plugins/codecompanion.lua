@@ -17,7 +17,7 @@ local function add_context_to_chat(chat, rules)
     end
 end
 
-local function get_code_diff(callback)
+local function insert_code_diff_to_context(callback)
     local items = {
         { label = "Commit (git show)", value = "commit" },
         { label = "Pull Request (gh pr)", value = "pr" },
@@ -34,14 +34,106 @@ local function get_code_diff(callback)
 
         local results = {}
 
+        -- 辅助函数：读取文件并处理结果，同时提供错误通知
+        local function add_file_to_results(filepath, results_table)
+            local content = utils.read_file(filepath)
+            if content then
+                results_table["file:" .. filepath] = content
+                return true
+            else
+                vim.schedule(function()
+                    vim.notify(string.format("Failed to read file: %s", filepath), vim.log.levels.WARN)
+                end)
+                return false
+            end
+        end
+
+        -- Helper to process files with status
+        local function process_files(file_entries, final_callback)
+            -- file_entries is a list of { status = "M", path = "file.lua" }
+            if #file_entries == 0 then return final_callback() end
+
+            local selected_entries = {}
+            -- 使用浅拷贝，因为结构简单
+            local remaining_entries = {}
+            for _, entry in ipairs(file_entries) do
+                table.insert(remaining_entries, { status = entry.status, path = entry.path })
+            end
+
+            local function pick_one()
+                local file_items = vim.tbl_map(function(e)
+                    -- 更灵活的格式化，适应可能超过2字符的状态码
+                    return { label = e.status .. " " .. e.path, value = e }
+                end, remaining_entries)
+
+                table.insert(file_items, 1, { label = string.format("== DONE (Selected: %d) ==", #selected_entries), value = "done" })
+                table.insert(file_items, 2, { label = "== ALL FILES ==", value = "all" })
+
+                vim.ui.select(file_items, {
+                    prompt = "Select files to include (one by one):",
+                    format_item = function(item) return item.label end
+                }, function(file_choice)
+                    -- 修复：如果 file_choice 为 nil (按下 <Esc>)，直接返回，不执行 callback
+                    if not file_choice then return end
+
+                    if file_choice.value == "done" then
+                        for _, e in ipairs(selected_entries) do
+                            add_file_to_results(e.path, results)
+                        end
+                        return final_callback()
+                    end
+
+                    if file_choice.value == "all" then
+                        for _, e in ipairs(file_entries) do
+                            add_file_to_results(e.path, results)
+                        end
+                        return final_callback()
+                    end
+
+                    -- Add to selected
+                    table.insert(selected_entries, file_choice.value)
+                    -- Remove from remaining
+                    for i, e in ipairs(remaining_entries) do
+                        if e.path == file_choice.value.path then
+                            table.remove(remaining_entries, i)
+                            break
+                        end
+                    end
+
+                    if #remaining_entries == 0 then
+                        for _, e in ipairs(selected_entries) do
+                            add_file_to_results(e.path, results)
+                        end
+                        return final_callback()
+                    end
+
+                    pick_one()
+                end)
+            end
+
+            pick_one()
+        end
+
         if choice.value == "commit" then
             vim.ui.input({ prompt = "Enter Commit Hash: " }, function(hash)
                 if hash and hash ~= "" then
                     vim.system({ "git", "show", hash }, { text = true }, function(obj)
                         if obj.code == 0 then
                             results.git_diff_ci = obj.stdout
-                            vim.schedule(function()
-                                callback(results)
+                            -- Get file list with status
+                            vim.system({ "git", "show", "--name-status", "--format=", hash }, { text = true }, function(f_obj)
+                                local entries = {}
+                                if f_obj.code == 0 then
+                                    for line in f_obj.stdout:gmatch("[^\r\n]+") do
+                                        local status, path = line:match("^(%S+)%s+(.+)$")
+                                        if status and path then
+                                            table.insert(entries, { status = status, path = path })
+                                        end
+                                    end
+                                end
+                                vim.schedule(function()
+                                    process_files(entries, function() callback(results) end)
+                                end)
                             end)
                         else
                             vim.schedule(function()
@@ -59,8 +151,7 @@ local function get_code_diff(callback)
             end
             vim.ui.input({ prompt = "Enter PR ID: " }, function(pr_id)
                 if pr_id and pr_id ~= "" then
-                    -- Fetch PR info and diff asynchronously
-                    vim.system({ "gh", "pr", "view", pr_id, "--json", "body,commits,title" }, { text = true }, function(info_obj)
+                    vim.system({ "gh", "pr", "view", pr_id, "--json", "body,commits,title,files" }, { text = true }, function(info_obj)
                         if info_obj.code ~= 0 then
                             return vim.schedule(function()
                                 vim.notify("Failed to get PR info for ID: " .. pr_id, vim.log.levels.ERROR)
@@ -70,8 +161,16 @@ local function get_code_diff(callback)
                         vim.system({ "gh", "pr", "diff", pr_id }, { text = true }, function(diff_obj)
                             if diff_obj.code == 0 then
                                 results.git_diff_pr = string.format("PR Info:\n%s\n\nPR Diff:\n%s", info_obj.stdout, diff_obj.stdout)
+                                local ok, info = pcall(vim.json.decode, info_obj.stdout)
+                                local entries = {}
+                                if ok and info.files then
+                                    local status_map = { MODIFIED = "M", ADDED = "A", DELETED = "D", RENAMED = "R" }
+                                    for _, f in ipairs(info.files) do
+                                        table.insert(entries, { status = status_map[f.status] or f.status:sub(1, 1), path = f.path })
+                                    end
+                                end
                                 vim.schedule(function()
-                                    callback(results)
+                                    process_files(entries, function() callback(results) end)
                                 end)
                             else
                                 vim.schedule(function()
@@ -95,12 +194,35 @@ local function get_code_diff(callback)
                     if staged_obj.stdout ~= "" then results.git_diff_staged = staged_obj.stdout end
                     if unstaged_obj.stdout ~= "" then results.git_diff_unstaged = unstaged_obj.stdout end
 
-                    vim.schedule(function()
-                        if next(results) then
-                            callback(results)
-                        else
-                            vim.notify("No changes detected", vim.log.levels.INFO)
-                        end
+                    -- Get file list with status
+                    vim.system({ "git", "diff", "--name-status" }, { text = true }, function(u_f_obj)
+                        vim.system({ "git", "diff", "--cached", "--name-status" }, { text = true }, function(s_f_obj)
+                            local entries_map = {}
+                            local function parse_output(stdout)
+                                for line in stdout:gmatch("[^\r\n]+") do
+                                    local status, path = line:match("^(%S+)%s+(.+)$")
+                                    if status and path then
+                                        entries_map[path] = status
+                                    end
+                                end
+                            end
+                            if u_f_obj.code == 0 then parse_output(u_f_obj.stdout) end
+                            if s_f_obj.code == 0 then parse_output(s_f_obj.stdout) end
+
+                            local entries = {}
+                            for path, status in pairs(entries_map) do
+                                table.insert(entries, { status = status, path = path })
+                            end
+                            table.sort(entries, function(a, b) return a.path < b.path end)
+
+                            vim.schedule(function()
+                                if next(results) then
+                                    process_files(entries, function() callback(results) end)
+                                else
+                                    vim.notify("No changes detected", vim.log.levels.INFO)
+                                end
+                            end)
+                        end)
                     end)
                 end)
             end)
@@ -320,7 +442,7 @@ require("codecompanion").setup({
                 ["git_diff"] = {
                     description = "Insert git diff into context",
                     callback = function(chat)
-                        get_code_diff(function(diffs)
+                        insert_code_diff_to_context(function(diffs)
                             for key, content in pairs(diffs) do
                                 chat:add_context({
                                     role = "user",
