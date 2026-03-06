@@ -77,8 +77,16 @@ local config = {
             "2. Use the selected code as the target. If no selected code, user should provide one. If user doesn't provide target, ask for it."),
         bash = "You are a professional Linux system administrator. " ..
             "Your task is to provide the exact BASH command for the user's request. " ..
-            "Rules:\n1. ONLY output the command itself.\n2. DO NOT include explanations or markdown blocks.\n" ..
-            "3. Join multiple commands with ' && '.\n4. Ensure safety."
+            "**CRITICAL: You MUST output ONLY a valid JSON object with the following exact structure:**\n" ..
+            "{\n" ..
+            '  \"bash\": \"the_bash_command_here\",\n' ..
+            '  \"explanation\": \"A concise explanation of what the command does and how to use it.\"\n' ..
+            "}\n" ..
+            "**RULES:**\n" ..
+            "1. The JSON must be the ONLY output. No markdown code blocks, no extra text.\n" ..
+            "2. The 'bash' field must contain the exact, safe BASH command(s). Join multiple commands with ' && '.\n" ..
+            "3. The 'explanation' field must be a clear, brief explanation in Chinese. It's better to provide explanation of up to 5 important parameters in command.\n" ..
+            "4. Ensure the command is safe and appropriate for the given context."
     }
 }
 
@@ -504,8 +512,42 @@ local function ai_bash()
 
         local prompt = config.prompts.bash .. "\nContext:\n" .. terminal_ctx
         call_llm_api(req, prompt, get_model_config("bashcommand"), function(res)
-            local cmd = res:gsub("```%w*", ""):gsub("```", ""):gsub("^%s*", ""):gsub("%s*$", "")
+            -- 清理响应，去除Markdown代码块标记
+            local cleaned = res:gsub("^```json%s*", ""):gsub("```%s*$", "")
+            cleaned = cleaned:gsub("^%s+", ""):gsub("%s+$", "")
+
+            -- 1. 尝试解析 JSON
+            local ok, parsed = pcall(vim.fn.json_decode, cleaned)
+
+            if not ok then
+                vim.notify("Failed to parse LLM response as JSON: " .. tostring(parsed), vim.log.levels.ERROR)
+                return
+            end
+
+            -- 2. 验证响应结构
+            if type(parsed) ~= "table" then
+                vim.notify("LLM response is not a JSON object.", vim.log.levels.ERROR)
+                return
+            end
+
+            -- 3. 验证必需字段
+            if not parsed.bash or type(parsed.bash) ~= "string" or parsed.bash:match("^%s*$") then
+                vim.notify("Missing or invalid 'bash' field in LLM response.", vim.log.levels.ERROR)
+                return
+            end
+
+            -- 4. 清理命令中的可能标记（作为安全网）
+            local cmd = parsed.bash:gsub("```%w*", ""):gsub("```", ""):gsub("^%s*", ""):gsub("%s*$", "")
+
+            -- 5. 发送命令到终端
             vim.api.nvim_chan_send(chan, cmd)
+
+            -- 6. 显示解释（如果存在）
+            if parsed.explanation and type(parsed.explanation) == "string" and not parsed.explanation:match("^%s*$") then
+                vim.notify(parsed.explanation, vim.log.levels.INFO, { timeout = 8000 })
+            else
+                vim.notify("Bash command sent to terminal.", vim.log.levels.INFO)
+            end
         end)
     end, { buffer = buf })
 

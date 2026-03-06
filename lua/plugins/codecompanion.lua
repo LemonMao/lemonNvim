@@ -30,9 +30,9 @@ local function insert_code_diff_to_context(callback)
             return item.label
         end,
     }, function(choice)
-        if not choice then return end
+            if not choice then return end
 
-        local results = {}
+            local results = {}
 
         -- 辅助函数：读取文件并处理结果，同时提供错误通知
         local function add_file_to_results(filepath, results_table)
@@ -230,7 +230,7 @@ local function insert_code_diff_to_context(callback)
     end)
 end
 
-local function change_adapter_to_gemini_lite(chat)
+local function change_llm_to_cheaper(chat)
     local adapter = {name = "gemini", model = "gemini-2.5-flash"}
     chat:change_adapter(adapter)
     vim.notify("Model updated to: " .. adapter.model, vim.log.levels.INFO, { title = "CodeCompanion" })
@@ -436,7 +436,7 @@ require("codecompanion").setup({
                                 "The message should be limited to 90 characters one line."..
                                 "If there're multiple changes, use number to list most 5 important items."
                         })
-                        change_adapter_to_gemini_lite(chat)
+                        change_llm_to_cheaper(chat)
                     end,
                 },
                 ["git_diff"] = {
@@ -455,7 +455,7 @@ require("codecompanion").setup({
                 ["apply"] = {
                     description = "Apply the code change to current buffer",
                     callback = function(chat)
-                        change_adapter_to_gemini_lite(chat)
+                        change_llm_to_cheaper(chat)
                         chat:add_buf_message({
                             role = "user",
                             content = "Use @{insert_edit_into_file} to apply the change.\n"..
@@ -463,6 +463,17 @@ require("codecompanion").setup({
                         })
                     end,
                 },
+                ["apply_design"] = {
+                    description = "Apply the design plan to file",
+                    callback = function(chat)
+                        change_llm_to_cheaper(chat)
+                        chat:add_buf_message({
+                            role = "user",
+                            content = "Use @{run_command} to apply the design plan to file.\n"..
+                                "The file is not exist. Use 'echo > xx' to do that. And tell me if done or not."
+                        })
+                    end,
+                }
             },
             editor_context = {
                 ["buffer"] = {
@@ -766,8 +777,8 @@ require("codecompanion").setup({
                 {
                     role = "user",
                     content = function(context)
-                        local behavior = "Tools: @{run_cmd}, @{insert_edit_into_file}\n"..
-                        "Follow brainstorming principles to generate design for user requirements:\n"
+                        local behavior = "You're a Principal Engineer to generate design plan by following brainstorming principles step by step for user requirements:\n"..
+                        "Please note **Don't implement the code in design plan, just describe design details and plans in natural language.**."
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
@@ -806,7 +817,8 @@ require("codecompanion").setup({
                         local behavior = "You're a Senior Principal Engineer to implement the code.\n" ..
                         "1. Implement code based on `Analysis report` or `Review report` or `Design plan` or `User requirements`. If you don't find any one, ask for what to implement.\n" ..
                         "2. If code is selected, just focus on modifying or completing that specific block. If no code is selected, implement the requested feature by modifying all relevant files in the context.\n" ..
-                        "3. Give a detail explanation of what you do before apply the change.\n"
+                        "3. You should follow the attached developer rules to implement the code.\n"..
+                        "4. Give a detail explanation of what you do before apply the change.\n"
 
                         if context.is_visual then
                             local selected_code = utils.wrap_code_with_md(context.code, context.filetype)
