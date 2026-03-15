@@ -386,6 +386,7 @@ require("codecompanion").setup({
                 end,
                 user = "Lemon",
             },
+            -- This is used when we want to insert context into existed chat.
             slash_commands = {
                 ["file"] = {
                     keymaps = {
@@ -660,6 +661,7 @@ require("codecompanion").setup({
     },
 
     prompt_library = {
+        -- This is used when we want to start a new chat.
         -- Use `:CodeCompanionActions refresh` to apply the new added prompt
         -- ------------ --
         -- Minor workflow

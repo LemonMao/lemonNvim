@@ -405,7 +405,7 @@ map("n", "<C-Right>", ":vertical resize +19<CR>", { desc = "Enlarge vertical win
 map("n", "<C-Down>", ":resize -10<CR>", { desc = "Reduce horizonal windown size" })
 map("n", "<C-Up>", ":resize +10<CR>", { desc = "Enlarge horizonal windown size" })
 map("n", "<leader>q", ":q<CR>", { desc = "Close the current window" })
-map('n', '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
+map("n", '<A-q>', toggle_quickfix, { desc = "Toggle quickfix window" })
 map({'n', 't', 'v'}, "<A-c>", close_preview_window, { desc = "Bufferline: Clean temporary windows and keep useful one."})
 -- 等比例 <C-w> =
 -- 关当前窗口 <C-w>c
@@ -459,10 +459,10 @@ map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR><Cmd>BufferLineM
 -- ## ------------------------------ ##
 --
 -- directory tree, nvim-tree
-map("n", "<A-f>", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
-map("n", "<A-F>", ":NvimTreeFindFile!<CR>", { desc = "open dir tree for file" })
+map({"n", "t"}, "<A-f>", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
+map({"n", "t"}, "<A-F>", ":NvimTreeFindFile!<CR>", { desc = "open dir tree for file" })
 -- Noice
-map("n", "<A-M>", toggle_noice_history, { desc = "Noice: Toggle message history" })
+map({"n", "t"}, "<A-M>", toggle_noice_history, { desc = "Noice: Toggle message history" })
 -- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })
 -- Readable, 换行
 map("x", "<leader>ow", ":set wrap!<CR>", { desc = "Toggle line wrapping" })
@@ -545,11 +545,15 @@ map('i', '<A-">', "\"\"\"\"\"\"<left><left><left>", { desc = "Markdown: Multiple
 -- Virtual mode text wrapping
 map('v', '<A-`>', 'c`<C-r>"`<Esc>', { desc = "Wrap `selection` with backticks" })
 map('v', '<A-[>', 'c[<C-r>"]<Esc>', { desc = "Wrap selection with square brackets" })
+map('v', '<A-]>', 'c[<C-r>"]<Esc>', { desc = "Wrap selection with square brackets" })
 map('v', '<A-{>', 'c{<C-r>"}<Esc>', { desc = "Wrap selection with curly braces" })
+map('v', '<A-}>', 'c{<C-r>"}<Esc>', { desc = "Wrap selection with curly braces" })
 map('v', '<A-">', 'c"<C-r>""<Esc>', { desc = "Wrap selection with double quotes" })
 map('v', '<A-\'>', "c'<C-r>\"'<Esc>", { desc = "Wrap selection with single quotes" })
 map('v', '<A-<>', 'c<<C-r>"><Esc>', { desc = "Wrap selection with angle brackets" })
+map('v', '<A->>', 'c<<C-r>"><Esc>', { desc = "Wrap selection with angle brackets" })
 map('v', '<A-(>', 'c(<C-r>")<Esc>', { desc = "Wrap selection with parentheses" })
+map('v', '<A-)>', 'c(<C-r>")<Esc>', { desc = "Wrap selection with parentheses" })
 
 -- ## ------------------------------ ##
 -- ## Coding

@@ -623,7 +623,7 @@ vim.keymap.set("t", "<C-g>", ai_bash, { desc = "AI: Generate Bash Command" })
 vim.keymap.set("i", "<C-g>", ai_completion, { desc = "AI: Trigger completion" })
 vim.keymap.set("i", "<A-q>", ai_dismiss, { desc = "AI: Dismiss completion" })
 
-vim.keymap.set({"i", "n"}, "<A-a>", "<Esc><cmd>CodeCompanionChat Toggle<CR>", { desc = "AI: Toggle sidebar", silent=true })
+vim.keymap.set({"i", "t", "n"}, "<A-a>", "<Esc><cmd>CodeCompanionChat Toggle<CR>", { desc = "AI: Toggle sidebar", silent=true })
 vim.keymap.set({ "n", "v" }, "<leader>a", "<cmd>CodeCompanionActions<cr>", {  desc = "AI: Launch CodeCompanionActions", silent = true })
 vim.keymap.set("v", "<leader>aa", "<cmd>CodeCompanion /new_chat<CR>", { desc = "AI: New CodeCompanion Ask for selected content", silent=true })
 vim.keymap.set("n", "<leader>aa", "<cmd>CodeCompanionChat<CR>", { desc = "AI: New CodeCompanion Ask for selected content", silent=true })

@@ -87,8 +87,18 @@ vim.lsp.config('lua_ls', {
   capabilities = lsp_capabilities,
   on_attach = LspKeybind,
   on_init = function(client)
-    local path = client.workspace_folders[1].name
-    if not vim.loop.fs_stat(path .. "/.luarc.json") and not vim.loop.fs_stat(path .. "/.luarc.jsonc") then
+    -- 1. 安全获取工作空间路径 (Safe Path Extraction)
+    local workspace = client.workspace_folders and client.workspace_folders[1]
+    local path = workspace and workspace.name
+
+    -- 2. 探测本地配置文件 (Local Config Detection)
+    local has_local_config = false
+    if path then
+      has_local_config = vim.loop.fs_stat(path .. "/.luarc.json") or vim.loop.fs_stat(path .. "/.luarc.jsonc")
+    end
+
+    -- 3. 应用策略：若无本地配置（含单文件模式），则注入 Neovim 优化设置
+    if not has_local_config then
       client.config.settings = vim.tbl_deep_extend("force", client.config.settings or {}, {
         Lua = {
           runtime = {
@@ -98,6 +108,7 @@ vim.lsp.config('lua_ls', {
             checkThirdParty = false,
             library = {
               vim.env.VIMRUNTIME,
+              -- 也可以根据需要添加 "${3rd}/luv/library" 等
             },
           },
         },
