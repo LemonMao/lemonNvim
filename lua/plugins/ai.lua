@@ -15,16 +15,10 @@ local ai_state = {
 
 local config = {
     models = {
-        ["gemini-2.5-flash-lite"] = {
+        ["gemini-3.1-flash-lite-preview"] = {
             provider = "gemini",
             endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-            model = "gemini-2.5-flash-lite",
-            api_key = os.getenv("GEMINI_API_KEY") or "",
-        },
-        ["gemini-2.5-flash"] = {
-            provider = "gemini",
-            endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-            model = "gemini-2.5-flash",
+            model = "gemini-3.1-flash-lite-preview",
             api_key = os.getenv("GEMINI_API_KEY") or "",
         },
         ["deepseek-chat"] = {
@@ -41,9 +35,9 @@ local config = {
         },
     },
     defaults = {
-        translation = "gemini-2.5-flash-lite",
-        explanation = "gemini-2.5-flash",
-        bashcommand = "gemini-2.5-flash",
+        translation = "gemini-3.1-flash-lite-preview",
+        explanation = "gemini-3.1-flash-lite-preview",
+        bashcommand = "gemini-3.1-flash-lite-preview",
     },
     model_groups = {
         deepseek = {
@@ -55,11 +49,11 @@ local config = {
             -- avante      = "ds_v", -- Provider name for Avante
         },
         gemini = {
-            translation = "gemini-2.5-flash-lite",
-            explanation = "gemini-2.5-flash",
-            bashcommand = "gemini-2.5-flash",
-            completion  = "gemini:gemini-2.5-flash",
-            codecompanion = "gemini:gemini-2.5-flash-lite",
+            translation = "gemini-3.1-flash-lite-preview",
+            explanation = "gemini-3.1-flash-lite-preview",
+            bashcommand = "gemini-3.1-flash-lite-preview",
+            completion  = "gemini:gemini-3.1-flash-lite-preview",
+            codecompanion = "gemini:gemini-3.1-flash-lite-preview",
             -- avante      = "gemini",
         },
     },

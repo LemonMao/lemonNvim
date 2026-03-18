@@ -459,8 +459,8 @@ map({'n', 't', 'v'}, '<leader>te', '<C-\\><C-n><Cmd>terminal<CR><Cmd>BufferLineM
 -- ## ------------------------------ ##
 --
 -- directory tree, nvim-tree
-map({"n", "t"}, "<A-f>", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
-map({"n", "t"}, "<A-F>", ":NvimTreeFindFile!<CR>", { desc = "open dir tree for file" })
+map({"n"}, "<A-f>", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree (closes Tagbar first if open)" })
+map({"n", "t"}, "<A-F>", toggle_nvimtree_with_tagbar_check, { desc = "open dir tree for file" })
 -- Noice
 map({"n", "t"}, "<A-M>", toggle_noice_history, { desc = "Noice: Toggle message history" })
 -- map("n", "<M-n>", ":Noice dismiss<CR>", { desc = "Noice: Dismiss all visible messages" })

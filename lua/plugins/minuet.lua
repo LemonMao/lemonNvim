@@ -19,14 +19,14 @@ require('minuet').setup {
             },
         },
         gemini = {
-            model = 'gemini-2.5-flash-lite',
+            model = 'gemini-3.1-flash-lite-preview',
             stream = true,
             api_key = 'GEMINI_API_KEY',
             end_point = 'https://generativelanguage.googleapis.com/v1beta/models',
             optional = {
                 generationConfig = {
                     maxOutputTokens = 256,
-                    -- When using `gemini-2.5-flash`, it is recommended to entirely
+                    -- When using non-reasoning model, it is recommended to entirely
                     -- disable thinking for faster completion retrieval.
                     thinkingConfig = {
                         thinkingBudget = 0,

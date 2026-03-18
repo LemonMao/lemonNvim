@@ -231,7 +231,7 @@ local function insert_code_diff_to_context(callback)
 end
 
 local function change_llm_to_cheaper(chat)
-    local adapter = {name = "gemini", model = "gemini-2.5-flash"}
+    local adapter = {name = "gemini", model = "gemini-3.1-flash-lite-preview"}
     chat:change_adapter(adapter)
     vim.notify("Model updated to: " .. adapter.model, vim.log.levels.INFO, { title = "CodeCompanion" })
 end
@@ -330,6 +330,15 @@ require("codecompanion").setup({
             gemini = function()
                 return require("codecompanion.adapters").extend("gemini", {
                     schema = {
+                        model = {
+                            default = "gemini-3-flash-preview",
+                            choices = {
+                                ["gemini-3.1-flash-lite-preview"] = {
+                                    formatted_name = "gemini 3.1 flash lite preview",
+                                    opts = { has_vision = true, can_reason = false },
+                                },
+                            },
+                        },
                         temperature = {
                             default = 0.1
                         },
@@ -366,6 +375,49 @@ require("codecompanion").setup({
                     },
                 })
             end,
+            openrouter = function()
+                return require("codecompanion.adapters").extend("openai_compatible", {
+                    env = {
+                        url = "https://openrouter.ai/api",
+                        api_key = "OPENROUTER_API_KEY",
+                        chat_url = "/v1/chat/completions",
+                    },
+                    schema = {
+                        model = {
+                            -- Update this to your preferred default OpenRouter model ID
+                            default = "openrouter/healer-alpha",
+                            choices = {
+                                ["openai/gpt-5.3-codex"] = {
+                                    formatted_name = "gpt-5.3-codex",
+                                    opts = { has_vision = true, can_reason = true },
+                                },
+                                ["google/gemini-3.1-pro-preview"] = {
+                                    formatted_name = "gemini-3.1-pro",
+                                    opts = { has_vision = true, can_reason = true },
+                                },
+                                ["openrouter/healer-alpha"] = {
+                                    formatted_name = "header-alpha",
+                                    opts = { has_vision = true, can_reason = true },
+                                },
+                                -- ["openai/gpt-4o-mini"] = {},
+                                -- Add more models as needed (check OpenRouter docs for IDs)
+                            },
+                        },
+                        temperature = {
+                            default = 0.1
+                        },
+                        top_p = {
+                            default = 0.1
+                        },
+                        max_tokens = {
+                            default = 64*1024,
+                        },
+                        reasoning_effort = {
+                            default = "medium",
+                        },
+                    },
+                })
+            end,
             opts = {
                 show_model_choices = true,
                 show_presets = false,
@@ -378,7 +430,7 @@ require("codecompanion").setup({
             adapter = {
                 name = "gemini",
                 model = "gemini-3-flash-preview",
-                -- model = "gemini-2.5-flash-lite",
+                -- model = "gemini-3.1-flash-lite-preview",
             },
             roles = {
                 llm = function(adapter)
@@ -511,19 +563,19 @@ require("codecompanion").setup({
         inline = {
             adapter = {
                 name = "gemini",
-                model = "gemini-2.5-flash",
+                model = "gemini-3.1-flash-lite-preview",
             },
         },
         cmd = {
             adapter = {
                 name = "gemini",
-                model = "gemini-2.5-flash-lite",
+                model = "gemini-3.1-flash-lite-preview",
             },
         },
         background = {
             adapter = {
                 name = "gemini",
-                model = "gemini-2.5-flash-lite",
+                model = "gemini-3.1-flash-lite-preview",
             },
         },
         shared = {
